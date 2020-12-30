@@ -7,11 +7,13 @@ import (
 	"github.com/tempcke/rpm/usecase"
 )
 
+// Server is used to expose appliaction over a RESTful API
 type Server struct {
 	http.Handler
 	propRepo usecase.PropertyRepository
 }
 
+// NewServer constructs a Server
 func NewServer(propRepo usecase.PropertyRepository) *Server {
 	server := new(Server)
 	server.propRepo = propRepo

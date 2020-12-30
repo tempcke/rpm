@@ -30,9 +30,10 @@ func (p Property) GetID() string {
 	return p.ID
 }
 
+// Validate is used to validate the entity
 func (p Property) Validate() error {
 	if p.ID == "" || p.Street == "" || p.City == "" || p.StateCode == "" || p.Zip == "" {
-		return InvalidEntityError
+		return ErrInvalidEntity
 	}
 	return nil
 }

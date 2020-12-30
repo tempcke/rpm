@@ -6,10 +6,12 @@ import (
 	"github.com/tempcke/rpm/entity"
 )
 
+// InMemory repository should NOT be used in production
 type InMemory struct {
 	properties map[string]entity.Property
 }
 
+// NewInMemoryRepo constructs an InMemory repository
 func NewInMemoryRepo() InMemory {
 	return InMemory{
 		properties: make(map[string]entity.Property),
