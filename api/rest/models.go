@@ -6,6 +6,10 @@ import (
 	"github.com/tempcke/rpm/entity"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 type PropertyModel struct {
 	ID        string `json:"id"`
 	Street    string `json:"street"`

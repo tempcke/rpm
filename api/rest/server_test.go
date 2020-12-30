@@ -3,6 +3,7 @@ package rest_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,45 +19,48 @@ type jsonMap map[string]interface{}
 var propRepo = repository.NewInMemoryRepo()
 var server = rest.NewServer(propRepo)
 
-func getJsonMapFromResponseBody(t *testing.T, r *httptest.ResponseRecorder) jsonMap {
-	t.Helper()
-	var m jsonMap
-	err := json.Unmarshal(r.Body.Bytes(), &m)
-	assert.Nil(t, err)
-	return m
-}
+var (
+	street = "123 N Fake st."
+	city   = "Dallas"
+	state  = "TX"
+	zip    = "75001"
+)
+var propJsonTemplate = `{"street": "%v", "city": "%v", "state": "%v", "zip": "%v"}`
+
+var propertyJson = fmt.Sprintf(
+	propJsonTemplate,
+	street,
+	city,
+	state,
+	zip,
+)
+
 func TestPostNewProperty(t *testing.T) {
 	t.Run("POST and GET Property", func(t *testing.T) {
-		postResponse := httptestPost("/property", `{
-			"street": "123 N Fake st.",
-			"city": "Dallas",
-			"state": "TX",
-			"zip": "75001"
-		}`)
 
-		m := getJsonMapFromResponseBody(t, postResponse)
-		propertyID := m["id"].(string)
+		// post new property
+		postResponse := httptestPost("/property", propertyJson)
 
-		t.Run("verify post response", func(t *testing.T) {
-			assertEqual(t, http.StatusCreated, postResponse.Code)
-			assertEqual(t, "123 N Fake st.", m["street"])
-			assertEqual(t, "Dallas", m["city"])
-			assertEqual(t, "TX", m["state"])
-			assertEqual(t, "75001", m["zip"])
-			assert.NotEmpty(t, m["id"])
-			assert.NotEmpty(t, m["createdAt"])
-			assertValidAndRecentDateString(t, m["createdAt"].(string))
-			propertyID = m["id"].(string)
-		})
+		// parse response
+		pr := getJsonMapFromResponseBody(t, postResponse)
+		assertEqual(t, http.StatusCreated, postResponse.Code)
+		assert.NotEmpty(t, pr["id"])
+		propertyID := pr["id"].(string)
 
-		t.Run("Get property", func(t *testing.T) {
-			getResponse := httptestGet("/property/" + propertyID)
-			assertEqual(t, http.StatusOK, getResponse.Code)
+		// check property stored in repo
+		p, err := propRepo.RetrieveProperty(propertyID)
+		assert.Nil(t, err)
+		assertEqual(t, street, p.Street)
+		assertEqual(t, city, p.City)
+		assertEqual(t, state, p.StateCode)
+		assertEqual(t, zip, p.Zip)
 
-			// getResponse data should match postResponse data
-			m2 := getJsonMapFromResponseBody(t, getResponse)
-			assert.Equal(t, m, m2)
-		})
+		// check response data structure
+		assertEqual(t, street, pr["street"])
+		assertEqual(t, city, pr["city"])
+		assertEqual(t, state, pr["state"])
+		assertEqual(t, zip, pr["zip"])
+		assertValidAndRecentDateString(t, pr["createdAt"].(string))
 	})
 
 	t.Run("post invalid json, expect 400", func(t *testing.T) {
@@ -69,7 +73,7 @@ func TestPostNewProperty(t *testing.T) {
 		assertEqual(t, http.StatusBadRequest, postResponse.Code)
 	})
 
-	t.Run("post invalid property, expect 400", func(t *testing.T) {
+	t.Run("post with missing field, expect 400", func(t *testing.T) {
 		postResponse := httptestPost("/property", `{
 			"city": "Dallas",
 			"state": "TX",
@@ -78,13 +82,63 @@ func TestPostNewProperty(t *testing.T) {
 		assertEqual(t, http.StatusBadRequest, postResponse.Code)
 	})
 
-	t.Run("unknown property, expect 404", func(t *testing.T) {
-		getResponse := httptestGet("/property/does-Not-Exist")
+}
+
+func TestGetProperty(t *testing.T) {
+	t.Run("Get property", func(t *testing.T) {
+		// create property in propRepo
+		p := propRepo.NewProperty(street, city, state, zip)
+		err := propRepo.StoreProperty(p)
+		assert.Nil(t, err)
+
+		// get property via API
+		getResponse := httptestGet("/property/" + p.ID)
+		assertEqual(t, http.StatusOK, getResponse.Code)
+
+		// check response data structure
+		m := getJsonMapFromResponseBody(t, getResponse)
+		assertEqual(t, p.ID, m["id"])
+		assertEqual(t, street, m["street"])
+		assertEqual(t, city, m["city"])
+		assertEqual(t, state, m["state"])
+		assertEqual(t, zip, m["zip"])
+		assertEqual(t, p.CreatedAt.Format(time.RFC3339), m["createdAt"])
+	})
+
+	t.Run("get unknown property, expect 404", func(t *testing.T) {
+		getResponse := httptestGet("/property/doesNotExist")
 		assertEqual(t, http.StatusNotFound, getResponse.Code)
 	})
 }
 
-// Helper functions
+func TestDeleteProperty(t *testing.T) {
+	t.Run("post then delete", func(t *testing.T) {
+		// create property in propRepo
+		p := propRepo.NewProperty(street, city, state, zip)
+		err := propRepo.StoreProperty(p)
+		assert.Nil(t, err)
+
+		// delete via API
+		delResponse := httptestDelete("/property/" + p.ID)
+		assertEqual(t, http.StatusNoContent, delResponse.Code)
+
+		// property should not be retrievable by repo anymore
+		_, err = propRepo.RetrieveProperty(p.ID)
+		assert.Error(t, err)
+	})
+
+	// should a restful DELETE on a resource that does not exist
+	// result in a 404 or not?
+	// https://stackoverflow.com/a/16632048/2683059
+	// a lot of conflicting answers on this one, I'm going to chose no
+	// for now because I can't think of a reason why the client should care
+	t.Run("unknown property, expect 204", func(t *testing.T) {
+		delResponse := httptestDelete("/property/doesNotExist")
+		assertEqual(t, http.StatusNoContent, delResponse.Code)
+	})
+}
+
+// http request helper functions
 func httptestPost(uri, jsonStr string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(http.MethodPost, uri, jsonReader(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
@@ -96,14 +150,28 @@ func httptestGet(uri string) *httptest.ResponseRecorder {
 	return execReq(req)
 }
 
+func httptestDelete(uri string) *httptest.ResponseRecorder {
+	req, _ := http.NewRequest(http.MethodDelete, uri, nil)
+	return execReq(req)
+}
+
 func execReq(req *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	server.ServeHTTP(rr, req)
 	return rr
 }
 
+// json helper functions
 func jsonReader(jsonStr string) *bytes.Buffer {
 	return bytes.NewBuffer([]byte(jsonStr))
+}
+
+func getJsonMapFromResponseBody(t *testing.T, r *httptest.ResponseRecorder) jsonMap {
+	t.Helper()
+	var m jsonMap
+	err := json.Unmarshal(r.Body.Bytes(), &m)
+	assert.Nil(t, err)
+	return m
 }
 
 // Custom Assertions
@@ -125,7 +193,7 @@ func assertValidAndRecentDateString(t *testing.T, timeStr string) {
 	assert.Nil(t, err)
 
 	// ensure recent
-	secondsAgo := time.Now().Sub(parsedTime).Seconds()
+	secondsAgo := time.Since(parsedTime).Seconds()
 	lowerBound, upperBound := 0.0, 5.0
 	assert.GreaterOrEqual(t, secondsAgo, lowerBound)
 	assert.Less(t, secondsAgo, upperBound)

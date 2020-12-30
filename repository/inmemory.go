@@ -28,7 +28,12 @@ func (r InMemory) NewProperty(street, city, state, zip string) entity.Property {
 func (r InMemory) RetrieveProperty(id string) (entity.Property, error) {
 	p, ok := r.properties[id]
 	if !ok {
-		return p, errors.New("")
+		return p, errors.New("property not found")
 	}
 	return p, nil
+}
+
+func (r InMemory) DeleteProperty(id string) error {
+	delete(r.properties, id)
+	return nil
 }
