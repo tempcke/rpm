@@ -25,9 +25,9 @@ func (s *Server) initRouter() {
 	r := chi.NewRouter()
 	r.Route("/property", func(r chi.Router) {
 		r.Post("/", addProperty(s.propRepo))
+		r.Get("/", listProperties(s.propRepo))
 		r.Route("/{propertyID}", func(r chi.Router) {
 			r.Get("/", getProperty(s.propRepo))
-			// 	r.Put("/", putProperty)
 			r.Delete("/", deleteProperty(s.propRepo))
 		})
 	})

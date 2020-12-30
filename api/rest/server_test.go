@@ -84,6 +84,57 @@ func TestPostNewProperty(t *testing.T) {
 
 }
 
+func TestListProperties(t *testing.T) {
+	t.Run("expect empty set when no properties exist", func(t *testing.T) {
+		// reset repo and server
+		propRepo = repository.NewInMemoryRepo()
+		server = rest.NewServer(propRepo)
+
+		getResponse := httptestGet("/property")
+		assertEqual(t, http.StatusOK, getResponse.Code)
+
+		var propList struct {
+			Items []map[string]interface{} `json:"items"`
+		}
+		err := json.Unmarshal(getResponse.Body.Bytes(), &propList)
+		assert.Nil(t, err)
+		assert.Len(t, propList.Items, 0)
+	})
+
+	t.Run("list two properties", func(t *testing.T) {
+		// create two properties in propRepo
+		p1 := propRepo.NewProperty("100 Main st", city, state, zip)
+		p2 := propRepo.NewProperty("102 Main st", city, state, zip)
+		propRepo.StoreProperty(p1)
+		propRepo.StoreProperty(p2)
+
+		// list via API
+		getResponse := httptestGet("/property")
+		assertEqual(t, http.StatusOK, getResponse.Code)
+
+		var propList struct {
+			Items []map[string]interface{} `json:"items"`
+		}
+		err := json.Unmarshal(getResponse.Body.Bytes(), &propList)
+		assert.Nil(t, err)
+
+		// ensure two results
+		assert.Len(t, propList.Items, 2)
+
+		// ensure those results are among the properties added
+		for _, p := range propList.Items {
+			id := p["id"]
+			if id != p1.ID && id != p2.ID {
+				t.Errorf("property id %v was not added?", id)
+				break
+			}
+		}
+
+		// make sure the same property wasn't just listed twice...
+		assert.NotEqual(t, propList.Items[0]["id"], propList.Items[1]["id"])
+	})
+}
+
 func TestGetProperty(t *testing.T) {
 	t.Run("Get property", func(t *testing.T) {
 		// create property in propRepo

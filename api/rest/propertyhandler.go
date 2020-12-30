@@ -29,7 +29,15 @@ func addProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 	}
 }
 
-func getProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
+func listProperties(propRepo usecase.PropertyReader) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uc := usecase.NewListProperties(propRepo)
+		propList := uc.Execute()
+		jsonResponse(w, NewPropertyListModel(propList...))
+	}
+}
+
+func getProperty(propRepo usecase.PropertyReader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		propertyID := chi.URLParam(r, "propertyID")
 		uc := usecase.NewGetProperty(propRepo)

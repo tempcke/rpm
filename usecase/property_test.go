@@ -32,6 +32,25 @@ func TestAddProperty(t *testing.T) {
 	})
 }
 
+func TestListProperties(t *testing.T) {
+	r := repository.NewInMemoryRepo()
+
+	t.Run("empty set", func(t *testing.T) {
+		propList := usecase.NewListProperties(r).Execute()
+		assert.Len(t, propList, 0)
+	})
+
+	t.Run("two properties", func(t *testing.T) {
+		p1 := r.NewProperty("100 N Main st.", "Dallas", "TX", "75401")
+		p2 := r.NewProperty("100 N Main st.", "Dallas", "TX", "75401")
+		r.StoreProperty(p1)
+		r.StoreProperty(p2)
+
+		propList := usecase.NewListProperties(r).Execute()
+		assert.Len(t, propList, 2)
+	})
+}
+
 func TestGetProperty(t *testing.T) {
 	repo := repository.NewInMemoryRepo()
 
