@@ -29,6 +29,8 @@ func TestPropertyRepositoryIntegration(t *testing.T) {
 			"postgres://%s:%s@localhost:%s/%s?sslmode=disable",
 			user, password, port, dbname,
 		)
+
+		containerTTL uint = 60 // seconds
 	)
 
 	pool, err := dockertest.NewPool("")
@@ -53,7 +55,16 @@ func TestPropertyRepositoryIntegration(t *testing.T) {
 		},
 	}
 
-	resource, err := pool.RunWithOptions(&opts)
+	resource, err := pool.RunWithOptions(&opts, func(config *docker.HostConfig) {
+		// set AutoRemove to true so that stopped container goes away by itself
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
+	resource.Expire(containerTTL)
+	defer resource.Close()
+
 	if err != nil {
 		log.Fatalf("Could not start resource: %s", err.Error())
 	}
@@ -74,9 +85,7 @@ func TestPropertyRepositoryIntegration(t *testing.T) {
 		log.Fatalf("Could not connect to docker: %s", err.Error())
 	}
 
-	defer func() {
-		db.Close()
-	}()
+	defer db.Close()
 
 	// construct repository
 	repo := repository.NewPostgresRepo(db)
