@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	log "github.com/sirupsen/logrus"
 	"github.com/tempcke/rpm/usecase"
 )
 
@@ -32,7 +33,12 @@ func addProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 func listProperties(propRepo usecase.PropertyReader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uc := usecase.NewListProperties(propRepo)
-		propList := uc.Execute()
+		propList, err := uc.Execute()
+		if err != nil {
+			log.Error(err)
+			errorResponse(w, http.StatusNotFound, "Error fetching list")
+			return
+		}
 		jsonResponse(w, NewPropertyListModel(propList...))
 	}
 }
