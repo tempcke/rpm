@@ -36,7 +36,8 @@ func TestListProperties(t *testing.T) {
 	r := repository.NewInMemoryRepo()
 
 	t.Run("empty set", func(t *testing.T) {
-		propList := usecase.NewListProperties(r).Execute()
+		propList, err := usecase.NewListProperties(r).Execute()
+		assert.NoError(t, err)
 		assert.Len(t, propList, 0)
 	})
 
@@ -46,7 +47,8 @@ func TestListProperties(t *testing.T) {
 		r.StoreProperty(p1)
 		r.StoreProperty(p2)
 
-		propList := usecase.NewListProperties(r).Execute()
+		propList, err := usecase.NewListProperties(r).Execute()
+		assert.NoError(t, err)
 		assert.Len(t, propList, 2)
 	})
 }
@@ -100,6 +102,6 @@ func TestDelProperty(t *testing.T) {
 	})
 }
 
-func newPropertyFixture(r repository.InMemory) entity.Property {
+func newPropertyFixture(r usecase.PropertyRepository) entity.Property {
 	return r.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
 }

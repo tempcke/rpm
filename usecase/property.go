@@ -5,7 +5,7 @@ import "github.com/tempcke/rpm/entity"
 // PropertyReader allows queries regarding properties
 type PropertyReader interface {
 	RetrieveProperty(id string) (entity.Property, error)
-	PropertyList() []entity.Property
+	PropertyList() ([]entity.Property, error)
 }
 
 // PropertyWriter allows for mutations within the property repository

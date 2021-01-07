@@ -39,14 +39,14 @@ func (r InMemory) RetrieveProperty(id string) (entity.Property, error) {
 }
 
 // PropertyList is used to list properties
-func (r InMemory) PropertyList() []entity.Property {
+func (r InMemory) PropertyList() ([]entity.Property, error) {
 	pl := make([]entity.Property, len(r.properties))
 	i := 0
 	for _, p := range r.properties {
 		pl[i] = p
 		i++
 	}
-	return pl
+	return pl, nil
 }
 
 // DeleteProperty by id

@@ -1,6 +1,8 @@
 package usecase
 
-import "github.com/tempcke/rpm/entity"
+import (
+	"github.com/tempcke/rpm/entity"
+)
 
 // ListProperties UseCase
 type ListProperties struct {
@@ -13,6 +15,6 @@ func NewListProperties(repo PropertyReader) ListProperties {
 }
 
 // Execute ListProperties returns slice of properties
-func (uc ListProperties) Execute() []entity.Property {
+func (uc ListProperties) Execute() ([]entity.Property, error) {
 	return uc.propRepo.PropertyList()
 }
