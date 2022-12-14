@@ -58,7 +58,7 @@ curl -X DELETE "http://localhost:8080/property/{propertyId}"
 
 [build-img]: https://github.com/tempcke/rpm/actions/workflows/test.yml/badge.svg
 [build-url]: https://github.com/tempcke/rpm/actions
-[pkg-img]: https://pkg.go.dev/badge/rpm/schedule
-[pkg-url]: https://pkg.go.dev/github.com/rpm/schedule
-[reportcard-img]: https://goreportcard.com/badge/rpm/schedule
-[reportcard-url]: https://goreportcard.com/report/rpm/schedule
+[pkg-img]: https://pkg.go.dev/badge/tempcke/rpm
+[pkg-url]: https://pkg.go.dev/github.com/tempcke/rpm
+[reportcard-img]: https://goreportcard.com/badge/tempcke/rpm
+[reportcard-url]: https://goreportcard.com/report/tempcke/rpm
