@@ -1,3 +1,7 @@
+[![build-img]][build-url]
+[![pkg-img]][pkg-url]
+[![reportcard-img]][reportcard-url]
+
 # Rental Property Manager (RPM)
 
 ## Implemented Features
@@ -7,9 +11,6 @@
 - Delete Property
 
 ## Roadmap
-- Docker
-    - PostgresSQL db and repository
-    - .env for db credentials etc
 - List Properties
     - filter
     - sort
@@ -54,3 +55,10 @@ curl -X GET "http://localhost:8080/property/{propertyId}" \
 ```
 curl -X DELETE "http://localhost:8080/property/{propertyId}"
 ```
+
+[build-img]: https://github.com/tempcke/rpm/actions/workflows/test.yml/badge.svg
+[build-url]: https://github.com/tempcke/rpm/actions
+[pkg-img]: https://pkg.go.dev/badge/rpm/schedule
+[pkg-url]: https://pkg.go.dev/github.com/rpm/schedule
+[reportcard-img]: https://goreportcard.com/badge/rpm/schedule
+[reportcard-url]: https://goreportcard.com/report/rpm/schedule

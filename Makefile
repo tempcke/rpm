@@ -3,6 +3,12 @@ project = $(shell basename $(shell pwd))
 help:				## display help information
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
+build:		## create binary
+	go build -o bin/rpm cmd/rpmserver/*.go
+
+run: .env build dockerUp	## create and run binary
+	godotenv bin/rpm
+
 check: test lint	## lint + test, pre-commit hook
 
 lint:				## fmt, vet, and staticcheck
@@ -30,9 +36,6 @@ dockerDown:	init	## docker-compose down
 	docker-compose down
 
 dockerRestart: dockerDown dockerUp	## dockerDown && dockerUp
-
-apiCheck: dockerRestart 	## generate api docs in apicheck.md
-	godotenv ./apicheck.sh
 
 clean: dockerDown	## dockerDown && docker-compose down for CI
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
