@@ -1,41 +1,23 @@
 package repository_test
 
 import (
-	"database/sql"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/usecase"
 )
 
 type Repo usecase.PropertyRepository
 
-// These tests are setup this way so that the same tests
-// can be run with different *sql.DB instances
-// postgres_integration_test.go uses a real pg instance
-// in docker which are slow (2 to 5 seconds)
-func runTestsWithRepo(t *testing.T, r Repo) {
-	t.Run("store and retrieve property", func(t *testing.T) {
-		testStoreAndRetrieveProperty(t, r)
-	})
-	t.Run("list properties", func(t *testing.T) {
-		testListProperties(t, r)
-	})
-	t.Run("remove property", func(t *testing.T) {
-		testRemoveProperty(t, r)
-	})
-}
-
 func testStoreAndRetrieveProperty(t *testing.T, r Repo) {
 	pIn := newPropertyFixture(r)
-	r.StoreProperty(pIn)
+	require.NoError(t, r.StoreProperty(pIn))
 	pOut, err := r.RetrieveProperty(pIn.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	assert.Equal(t, pIn.ID, pOut.ID)
 	assert.Equal(t, pIn.Street, pOut.Street)
 	assert.Equal(t, pIn.City, pOut.City)
@@ -79,7 +61,7 @@ func testListProperties(t *testing.T, r Repo) {
 func testRemoveProperty(t *testing.T, r Repo) {
 	// create and store property
 	p := newPropertyFixture(r)
-	r.StoreProperty(p)
+	require.NoError(t, r.StoreProperty(p))
 	// remove property
 	err := r.DeleteProperty(p.ID)
 	assert.NoError(t, err)
@@ -95,21 +77,6 @@ func newPropertyFixture(r Repo) entity.Property {
 	streetNum++
 	street := fmt.Sprintf("%v N Main st.", streetNum)
 	return r.NewProperty(street, "Dallas", "TX", "75401")
-}
-
-func loadMigrations(db *sql.DB) error {
-	query := `
-	  CREATE TABLE IF NOT EXISTS properties (
-			id         VARCHAR(36)  PRIMARY KEY,
-			street     VARCHAR(255),
-			city       VARCHAR(32),
-			state      VARCHAR(32),
-			zip        VARCHAR(10),
-			created_at TIMESTAMPTZ
-		)
-	`
-	_, err := db.Exec(query)
-	return err
 }
 
 // custom assertions

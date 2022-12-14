@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	// ErrInvalidEntity is an invlid entity error
-	ErrInvalidEntity = errors.New("Invalid entity")
+	// ErrInvalidEntity is an invalid entity error
+	ErrInvalidEntity = errors.New("invalid entity")
 )
 
 // Entity interface
