@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -13,10 +14,12 @@ import (
 
 type Repo usecase.PropertyRepository
 
+var ctx = context.Background()
+
 func testStoreAndRetrieveProperty(t *testing.T, r Repo) {
 	pIn := newPropertyFixture(r)
-	require.NoError(t, r.StoreProperty(pIn))
-	pOut, err := r.RetrieveProperty(pIn.ID)
+	require.NoError(t, r.StoreProperty(ctx, pIn))
+	pOut, err := r.RetrieveProperty(ctx, pIn.ID)
 	require.NoError(t, err)
 	assert.Equal(t, pIn.ID, pOut.ID)
 	assert.Equal(t, pIn.Street, pOut.Street)
@@ -34,12 +37,12 @@ func testListProperties(t *testing.T, r Repo) {
 		props[p.ID] = p
 
 		// store entity
-		err := r.StoreProperty(p)
+		err := r.StoreProperty(ctx, p)
 		assert.NoError(t, err)
 	}
 
 	// list entities, this is what we want to test!
-	propList, err := r.PropertyList()
+	propList, err := r.PropertyList(ctx)
 	assert.NoError(t, err)
 
 	// iterate over list counting the times each id is seen
@@ -61,12 +64,12 @@ func testListProperties(t *testing.T, r Repo) {
 func testRemoveProperty(t *testing.T, r Repo) {
 	// create and store property
 	p := newPropertyFixture(r)
-	require.NoError(t, r.StoreProperty(p))
+	require.NoError(t, r.StoreProperty(ctx, p))
 	// remove property
-	err := r.DeleteProperty(p.ID)
+	err := r.DeleteProperty(ctx, p.ID)
 	assert.NoError(t, err)
 	// try to retrieve property
-	_, err = r.RetrieveProperty(p.ID)
+	_, err = r.RetrieveProperty(ctx, p.ID)
 	assert.Error(t, err)
 }
 

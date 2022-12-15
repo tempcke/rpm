@@ -2,6 +2,7 @@ package rest_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,16 +11,19 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tempcke/rpm/api/rest"
 	"github.com/tempcke/rpm/repository"
 )
 
 type jsonMap map[string]interface{}
 
-var propRepo = repository.NewInMemoryRepo()
-var server = rest.NewServer(propRepo)
-
 var (
+	ctx = context.Background()
+
+	propRepo = repository.NewInMemoryRepo()
+	server   = rest.NewServer(propRepo)
+
 	street = "123 N Fake st."
 	city   = "Dallas"
 	state  = "TX"
@@ -48,7 +52,7 @@ func TestPostNewProperty(t *testing.T) {
 		propertyID := pr["id"].(string)
 
 		// check property stored in repo
-		p, err := propRepo.RetrieveProperty(propertyID)
+		p, err := propRepo.RetrieveProperty(ctx, propertyID)
 		assert.Nil(t, err)
 		assertEqual(t, street, p.Street)
 		assertEqual(t, city, p.City)
@@ -105,8 +109,8 @@ func TestListProperties(t *testing.T) {
 		// create two properties in propRepo
 		p1 := propRepo.NewProperty("100 Main st", city, state, zip)
 		p2 := propRepo.NewProperty("102 Main st", city, state, zip)
-		propRepo.StoreProperty(p1)
-		propRepo.StoreProperty(p2)
+		require.NoError(t, propRepo.StoreProperty(ctx, p1))
+		require.NoError(t, propRepo.StoreProperty(ctx, p2))
 
 		// list via API
 		getResponse := httptestGet("/property")
@@ -139,7 +143,7 @@ func TestGetProperty(t *testing.T) {
 	t.Run("Get property", func(t *testing.T) {
 		// create property in propRepo
 		p := propRepo.NewProperty(street, city, state, zip)
-		err := propRepo.StoreProperty(p)
+		err := propRepo.StoreProperty(ctx, p)
 		assert.Nil(t, err)
 
 		// get property via API
@@ -166,7 +170,7 @@ func TestDeleteProperty(t *testing.T) {
 	t.Run("post then delete", func(t *testing.T) {
 		// create property in propRepo
 		p := propRepo.NewProperty(street, city, state, zip)
-		err := propRepo.StoreProperty(p)
+		err := propRepo.StoreProperty(ctx, p)
 		assert.Nil(t, err)
 
 		// delete via API
@@ -174,14 +178,14 @@ func TestDeleteProperty(t *testing.T) {
 		assertEqual(t, http.StatusNoContent, delResponse.Code)
 
 		// property should not be retrievable by repo anymore
-		_, err = propRepo.RetrieveProperty(p.ID)
+		_, err = propRepo.RetrieveProperty(ctx, p.ID)
 		assert.Error(t, err)
 	})
 
 	// should a restful DELETE on a resource that does not exist
 	// result in a 404 or not?
 	// https://stackoverflow.com/a/16632048/2683059
-	// a lot of conflicting answers on this one, I'm going to chose no
+	// a lot of conflicting answers on this one, I'm going to choose no
 	// for now because I can't think of a reason why the client should care
 	t.Run("unknown property, expect 204", func(t *testing.T) {
 		delResponse := httptestDelete("/property/doesNotExist")

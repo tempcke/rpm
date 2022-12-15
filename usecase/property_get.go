@@ -1,6 +1,10 @@
 package usecase
 
-import "github.com/tempcke/rpm/entity"
+import (
+	"context"
+
+	"github.com/tempcke/rpm/entity"
+)
 
 // GetProperty UseCase
 type GetProperty struct {
@@ -13,6 +17,6 @@ func NewGetProperty(repo PropertyReader) GetProperty {
 }
 
 // Execute GetProperty returns a property by id
-func (uc GetProperty) Execute(id string) (entity.Property, error) {
-	return uc.propRepo.RetrieveProperty(id)
+func (uc GetProperty) Execute(ctx context.Context, id string) (entity.Property, error) {
+	return uc.propRepo.RetrieveProperty(ctx, id)
 }

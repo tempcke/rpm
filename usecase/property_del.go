@@ -1,5 +1,9 @@
 package usecase
 
+import (
+	"context"
+)
+
 // DeleteProperty Use Case
 type DeleteProperty struct {
 	propRepo PropertyWriter
@@ -11,6 +15,6 @@ func NewDeleteProperty(repo PropertyWriter) DeleteProperty {
 }
 
 // Execute the DeleteProperty use case to delete a property by ID
-func (uc DeleteProperty) Execute(id string) error {
-	return uc.propRepo.DeleteProperty(id)
+func (uc DeleteProperty) Execute(ctx context.Context, id string) error {
+	return uc.propRepo.DeleteProperty(ctx, id)
 }

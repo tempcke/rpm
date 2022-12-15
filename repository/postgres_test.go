@@ -8,7 +8,10 @@ import (
 
 	"github.com/tempcke/rpm/internal/test"
 	"github.com/tempcke/rpm/repository"
+	"github.com/tempcke/rpm/usecase"
 )
+
+var _ usecase.PropertyRepository = (*repository.Postgres)(nil)
 
 func TestPropertyRepository(t *testing.T) {
 	r := repository.NewPostgresRepo(test.DB(t))

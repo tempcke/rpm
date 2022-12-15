@@ -1,6 +1,10 @@
 package usecase
 
-import "github.com/tempcke/rpm/entity"
+import (
+	"context"
+
+	"github.com/tempcke/rpm/entity"
+)
 
 // AddProperty is a use case to add a property
 type AddProperty struct {
@@ -13,9 +17,9 @@ func NewAddProperty(repo PropertyWriter) AddProperty {
 }
 
 // Execute the use case
-func (c AddProperty) Execute(property entity.Property) error {
+func (c AddProperty) Execute(ctx context.Context, property entity.Property) error {
 	if err := property.Validate(); err != nil {
 		return err
 	}
-	return c.propRepo.StoreProperty(property)
+	return c.propRepo.StoreProperty(ctx, property)
 }

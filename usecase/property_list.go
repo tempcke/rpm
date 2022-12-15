@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"context"
+
 	"github.com/tempcke/rpm/entity"
 )
 
@@ -15,6 +17,6 @@ func NewListProperties(repo PropertyReader) ListProperties {
 }
 
 // Execute ListProperties returns slice of properties
-func (uc ListProperties) Execute() ([]entity.Property, error) {
-	return uc.propRepo.PropertyList()
+func (uc ListProperties) Execute(ctx context.Context) ([]entity.Property, error) {
+	return uc.propRepo.PropertyList(ctx)
 }

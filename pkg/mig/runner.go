@@ -111,7 +111,7 @@ func (r *Runner) migFlows() []Flow {
 			*r.flows[i] = nil // free the ram
 		}
 	}
-	r.flows = nil // free the ram
+	r.flows = nil // lets not leave a slice of nils...
 	return result
 }
 

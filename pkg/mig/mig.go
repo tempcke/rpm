@@ -16,7 +16,7 @@ var logger logrus.FieldLogger
 
 // MakeID creates a migration ID from a given flow and step num
 // flowNum and stepNum are converted to hex and appended to the prefix
-// the intention is for each file to be numbered by its flowNum 001, 002 etc
+// the intention is for each file to be numbered by its flowNum 001, 002 etc.
 // but allow it to add related migrations in the future with stepNums
 // this way create table and future alter table statements can be together in the same file
 //

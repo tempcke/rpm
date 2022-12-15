@@ -7,7 +7,7 @@ import (
 	"github.com/tempcke/rpm/usecase"
 )
 
-// Server is used to expose appliaction over a RESTful API
+// Server is used to expose application over a restful API
 type Server struct {
 	http.Handler
 	propRepo usecase.PropertyRepository

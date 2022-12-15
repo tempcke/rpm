@@ -10,6 +10,7 @@ import (
 
 func addProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		data := PropertyModel{}
 		if err := decodeRequestData(w, r.Body, &data); err != nil {
 			return
@@ -20,7 +21,7 @@ func addProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 			data.Street, data.City, data.State, data.Zip,
 		)
 
-		if err := uc.Execute(property); err != nil {
+		if err := uc.Execute(ctx, property); err != nil {
 			errorResponse(w, http.StatusBadRequest, "Missing or invalid fields")
 			return
 		}
@@ -32,8 +33,9 @@ func addProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 
 func listProperties(propRepo usecase.PropertyReader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		uc := usecase.NewListProperties(propRepo)
-		propList, err := uc.Execute()
+		propList, err := uc.Execute(ctx)
 		if err != nil {
 			log.Error(err)
 			errorResponse(w, http.StatusNotFound, "Error fetching list")
@@ -45,9 +47,10 @@ func listProperties(propRepo usecase.PropertyReader) http.HandlerFunc {
 
 func getProperty(propRepo usecase.PropertyReader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		propertyID := chi.URLParam(r, "propertyID")
 		uc := usecase.NewGetProperty(propRepo)
-		property, err := uc.Execute(propertyID)
+		property, err := uc.Execute(ctx, propertyID)
 		if err != nil {
 			errorResponse(w, http.StatusNotFound, "propertyId not found")
 			return
@@ -58,13 +61,14 @@ func getProperty(propRepo usecase.PropertyReader) http.HandlerFunc {
 
 func deleteProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		propertyID := chi.URLParam(r, "propertyID")
 		uc := usecase.NewDeleteProperty(propRepo)
-		err := uc.Execute(propertyID)
+		err := uc.Execute(ctx, propertyID)
 		if err != nil {
-			// what should a RESTful DELETE endpoint do
+			// what should a restful DELETE endpoint do
 			// when the resource does not exist?
-			// for now I vote nothing, they client wants it gone
+			// for now, I vote nothing, they client wants it gone,
 			// and it isn't there ... so client should be happy
 
 			w.WriteHeader(http.StatusNoContent)
