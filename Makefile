@@ -3,7 +3,7 @@ project = $(shell basename $(shell pwd))
 help:				## display help information
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-build:		## create binary
+build:				## create binary
 	go build -o bin/rpm cmd/rpmserver/*.go
 
 run: .env build dockerUp	## create and run binary
@@ -17,7 +17,7 @@ lint:				## fmt, vet, and staticcheck
 	staticcheck -tags=withDocker ./...
 
 test:				## execute tests
-	godotenv time -p go test -failfast -race ./... | grep -v '\[no test'
+	godotenv time -p go test -failfast -race -count=1 ./... -cover | grep -v '\[no test'
 
 testAll: dockerUp	## run all tests including those that need docker/postgres
 	godotenv time -p go test -failfast -p=1 -count=1 ./... -tags=withDocker -cover | grep -v '\[no test'

@@ -5,7 +5,7 @@
 # Rental Property Manager (RPM)
 
 ## Implemented Features
-- Add Property
+- Store Property
 - List Properties
 - Get Property Details
 - Delete Property

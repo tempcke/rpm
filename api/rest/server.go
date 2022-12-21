@@ -27,6 +27,7 @@ func (s *Server) initRouter() {
 		r.Post("/", addProperty(s.propRepo))
 		r.Get("/", listProperties(s.propRepo))
 		r.Route("/{propertyID}", func(r chi.Router) {
+			r.Put("/", storeProperty(s.propRepo))
 			r.Get("/", getProperty(s.propRepo))
 			r.Delete("/", deleteProperty(s.propRepo))
 		})
