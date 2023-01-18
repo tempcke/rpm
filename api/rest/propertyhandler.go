@@ -3,7 +3,7 @@ package rest
 import (
 	"net/http"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	log "github.com/sirupsen/logrus"
 	"github.com/tempcke/rpm/usecase"
 )
@@ -27,8 +27,7 @@ func addProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 		}
 
 		w.Header().Set("Location", "/property/"+property.ID)
-		w.WriteHeader(http.StatusCreated)
-		jsonResponse(w, NewPropertyModel(property))
+		jsonResponse(w, http.StatusCreated, NewPropertyModel(property))
 	}
 }
 
@@ -62,12 +61,9 @@ func storeProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Location", "/property/"+property.ID)
-
 		// we want to reply with 201 when it is new and 200 when updated
-
-		w.WriteHeader(resCode)
-		jsonResponse(w, NewPropertyModel(property))
+		jsonResponse(w, resCode, NewPropertyModel(property))
+		w.Header().Set("Location", "/property/"+property.ID)
 	}
 }
 
@@ -81,7 +77,7 @@ func listProperties(propRepo usecase.PropertyReader) http.HandlerFunc {
 			errorResponse(w, http.StatusNotFound, "Error fetching list")
 			return
 		}
-		jsonResponse(w, NewPropertyListModel(propList...))
+		jsonResponse(w, http.StatusOK, NewPropertyListModel(propList...))
 	}
 }
 
@@ -95,7 +91,7 @@ func getProperty(propRepo usecase.PropertyReader) http.HandlerFunc {
 			errorResponse(w, http.StatusNotFound, "propertyId not found")
 			return
 		}
-		jsonResponse(w, NewPropertyModel(property))
+		jsonResponse(w, http.StatusOK, NewPropertyModel(property))
 	}
 }
 

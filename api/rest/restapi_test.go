@@ -18,13 +18,58 @@ import (
 
 var ctx = context.Background()
 
-func TestAddProperty(t *testing.T) {
+func TestWithTestServer(t *testing.T) {
+	// why does this test exist?
+	// this tests checks that content-type response header is set correctly
+	// even though the other tests check content-type vai the response recorder
+	// I noticed in postman it was coming back as plain/text
+	// so this test was written to see if using a test service and http client Do
+	// could reproduce the problem, and it did.  The issue has been fixed
+	// but leaving this test here to make sure it doesn't happen again.
 	var (
-		repo = repository.NewInMemoryRepo()
-		s    = rest.NewServer(repo)
-
+		repo    = repository.NewInMemoryRepo()
+		svc     = rest.NewServer(repo).WithConfig(noAuthConf(t))
 		headers map[string]string
 	)
+	s := httptest.NewServer(svc)
+	defer s.Close()
+
+	host := s.URL
+
+	t.Run("201 post creates a new property with server generated id", func(t *testing.T) {
+		var (
+			route = host + "/property"
+			p1    = fake.Property()
+		)
+		body := map[string]string{
+			"street": p1.Street,
+			"city":   p1.City,
+			"state":  p1.StateCode,
+			"zip":    p1.Zip,
+		}
+
+		rr := execReq(t, postReq(t, route, body, headers))
+		require.Equal(t, http.StatusCreated, rr.StatusCode)
+		assertApplicationJson(t, rr.Header)
+
+		// check location header
+		// we should be able to use the location header to fetch the resource
+		loc := rr.Header.Get("Location")
+		require.NotEmpty(t, loc)
+
+		// get property from route in location header
+		rr = execReq(t, getReq(t, host+loc, headers))
+		require.Equal(t, http.StatusOK, rr.StatusCode)
+		assertApplicationJson(t, rr.Header)
+	})
+}
+func TestAddProperty(t *testing.T) {
+	var (
+		repo    = repository.NewInMemoryRepo()
+		s       = rest.NewServer(repo).WithConfig(noAuthConf(t))
+		headers map[string]string
+	)
+
 	t.Run("201 post creates a new property with server generated id", func(t *testing.T) {
 		var (
 			route = "/property"
@@ -41,6 +86,7 @@ func TestAddProperty(t *testing.T) {
 		s.ServeHTTP(rr, postReq(t, route, body, headers))
 
 		require.Equal(t, http.StatusCreated, rr.Code)
+		assertApplicationJson(t, rr.Header())
 		var res rest.PropertyModel
 		require.NoError(t, json.NewDecoder(rr.Body).Decode(&res))
 
@@ -63,10 +109,10 @@ func TestAddProperty(t *testing.T) {
 		rr = httptest.NewRecorder()
 		s.ServeHTTP(rr, getReq(t, loc, headers))
 		require.Equal(t, http.StatusOK, rr.Code)
+		assertApplicationJson(t, rr.Header())
 
 		var fetched rest.PropertyModel
 		assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &fetched))
-		require.NoError(t, err)
 		assertEqual(t, res.ID, fetched.ID)
 		assertEqual(t, p1.Street, fetched.Street)
 		assertEqual(t, p1.City, fetched.City)
@@ -140,7 +186,7 @@ func TestAddProperty_badRequest(t *testing.T) {
 		headers map[string]string
 		route   = "/property"
 		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(repo)
+		s       = rest.NewServer(repo).WithConfig(noAuthConf(t))
 	)
 	tests := map[string]struct {
 		body string
@@ -167,7 +213,6 @@ func TestAddProperty_badRequest(t *testing.T) {
 		})
 	}
 }
-
 func TestListProperties(t *testing.T) {
 	var (
 		route   = "/property"
@@ -176,7 +221,7 @@ func TestListProperties(t *testing.T) {
 	t.Run("200 expect empty set when no properties exist", func(t *testing.T) {
 		var (
 			repo = repository.NewInMemoryRepo()
-			s    = rest.NewServer(repo)
+			s    = rest.NewServer(repo).WithConfig(noAuthConf(t))
 		)
 
 		req := getReq(t, route, headers)
@@ -191,7 +236,7 @@ func TestListProperties(t *testing.T) {
 	t.Run("200 list two properties", func(t *testing.T) {
 		var (
 			repo = repository.NewInMemoryRepo()
-			s    = rest.NewServer(repo)
+			s    = rest.NewServer(repo).WithConfig(noAuthConf(t))
 		)
 
 		// create two properties in propRepo
@@ -228,13 +273,12 @@ func TestListProperties(t *testing.T) {
 		assert.NotEqual(t, propList.Items[0].ID, propList.Items[1].ID)
 	})
 }
-
 func TestGetProperty(t *testing.T) {
 	var (
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(repo)
+		s         = rest.NewServer(repo).WithConfig(noAuthConf(t))
 	)
 	t.Run("200 get property", func(t *testing.T) {
 		var (
@@ -277,7 +321,7 @@ func TestDeleteProperty(t *testing.T) {
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(repo)
+		s         = rest.NewServer(repo).WithConfig(noAuthConf(t))
 	)
 	t.Run("204 delete property", func(t *testing.T) {
 		var (
@@ -321,4 +365,63 @@ func TestDeleteProperty(t *testing.T) {
 		s.ServeHTTP(rr, req)
 		require.Equal(t, http.StatusNoContent, rr.Code)
 	})
+}
+
+func TestAccessViaAPIKeyAndSecret(t *testing.T) {
+	var (
+		repo = repository.NewInMemoryRepo()
+	)
+
+	tests := map[string]struct {
+		k, s   string // key and secret from env
+		rk, rs string // key and secret used in request header
+		code   int    // expected response code
+	}{
+		// 401 when set and no match
+		"secret1": {"", "c", "", "", 401},
+		"secret2": {"", "c", "", "d", 401},
+		"key1":    {"e", "", "", "", 401},
+		"key2":    {"e", "", "f", "", 401},
+		"both1":   {"g", "h", "", "", 401},
+		"both2":   {"g", "h", "g", "", 401},
+		"both3":   {"g", "h", "g", "a", 401},
+		"both4":   {"g", "h", "", "h", 401},
+		"both5":   {"g", "h", "a", "h", 401},
+		"both6":   {"g", "h", "a", "b", 401},
+
+		// 201 when unset or match
+		"unset1":  {"", "", "", "", 201},
+		"unset2":  {"", "", "a", "b", 201},
+		"secret3": {"", "c", "", "c", 201},
+		"key3":    {"e", "", "e", "", 201},
+		"both7":   {"g", "h", "g", "h", 201},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			var (
+				p1        = fake.Property()
+				route     = "/property/" + p1.ID
+				key       = tc.k
+				secret    = tc.s
+				reqKey    = tc.rk
+				reqSecret = tc.rs
+			)
+
+			s := rest.NewServer(repo).WithConfig(authConf(t, key, secret))
+
+			body := map[string]string{
+				"street": p1.Street,
+				"city":   p1.City,
+				"state":  p1.StateCode,
+				"zip":    p1.Zip,
+			}
+
+			rr := httptest.NewRecorder()
+			s.ServeHTTP(rr, putReq(t, route, body, map[string]string{
+				rest.HeaderAPIKey:    reqKey,
+				rest.HeaderAPISecret: reqSecret,
+			}))
+			require.Equal(t, tc.code, rr.Code, "%s:%s %s:%s", tc.k, tc.s, tc.rk, tc.rs)
+		})
+	}
 }

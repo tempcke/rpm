@@ -37,6 +37,9 @@ dockerDown:	init	## docker-compose down
 
 dockerRestart: dockerDown dockerUp	## dockerDown && dockerUp
 
+apiCheck: dockerRestart 	## generate api docs in apicheck.md
+	godotenv ./apicheck.sh
+
 clean: dockerDown	## dockerDown && docker-compose down for CI
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
 

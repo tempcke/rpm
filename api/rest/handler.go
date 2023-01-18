@@ -3,8 +3,9 @@ package rest
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
+
+	"github.com/tempcke/rpm/pkg/log"
 )
 
 func decodeRequestData(w http.ResponseWriter, body io.Reader, data interface{}) error {
@@ -16,16 +17,23 @@ func decodeRequestData(w http.ResponseWriter, body io.Reader, data interface{}) 
 	return nil
 }
 
-func jsonResponse(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(data)
+func jsonResponse(w http.ResponseWriter, resCode int, data interface{}) {
+	jData, err := json.Marshal(data)
 	if err != nil {
-		log.Println("json.Encode response failed: " + err.Error())
+		log.WithError(err).Error("json.Encode response failed")
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(resCode)
+	if _, err := w.Write(jData); err != nil {
+		log.WithError(err).Error("w.Write failed")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
 
 func errorResponse(w http.ResponseWriter, code int, msg string) {
-	w.WriteHeader(code)
-	jsonResponse(w, ErrorResponse{Error: msg})
+	jsonResponse(w, code, ErrorResponse{Error: msg})
 }
