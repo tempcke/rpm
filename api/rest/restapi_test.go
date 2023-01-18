@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -18,52 +17,7 @@ import (
 
 var ctx = context.Background()
 
-func TestWithTestServer(t *testing.T) {
-	// why does this test exist?
-	// this tests checks that content-type response header is set correctly
-	// even though the other tests check content-type vai the response recorder
-	// I noticed in postman it was coming back as plain/text
-	// so this test was written to see if using a test service and http client Do
-	// could reproduce the problem, and it did.  The issue has been fixed
-	// but leaving this test here to make sure it doesn't happen again.
-	var (
-		repo    = repository.NewInMemoryRepo()
-		svc     = rest.NewServer(repo).WithConfig(noAuthConf(t))
-		headers map[string]string
-	)
-	s := httptest.NewServer(svc)
-	defer s.Close()
-
-	host := s.URL
-
-	t.Run("201 post creates a new property with server generated id", func(t *testing.T) {
-		var (
-			route = host + "/property"
-			p1    = fake.Property()
-		)
-		body := map[string]string{
-			"street": p1.Street,
-			"city":   p1.City,
-			"state":  p1.StateCode,
-			"zip":    p1.Zip,
-		}
-
-		rr := execReq(t, postReq(t, route, body, headers))
-		require.Equal(t, http.StatusCreated, rr.StatusCode)
-		assertApplicationJson(t, rr.Header)
-
-		// check location header
-		// we should be able to use the location header to fetch the resource
-		loc := rr.Header.Get("Location")
-		require.NotEmpty(t, loc)
-
-		// get property from route in location header
-		rr = execReq(t, getReq(t, host+loc, headers))
-		require.Equal(t, http.StatusOK, rr.StatusCode)
-		assertApplicationJson(t, rr.Header)
-	})
-}
-func TestAddProperty(t *testing.T) {
+func TestPutProperty(t *testing.T) {
 	var (
 		repo    = repository.NewInMemoryRepo()
 		s       = rest.NewServer(repo).WithConfig(noAuthConf(t))
@@ -82,38 +36,35 @@ func TestAddProperty(t *testing.T) {
 			"zip":    p1.Zip,
 		}
 
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, postReq(t, route, body, headers))
-
-		require.Equal(t, http.StatusCreated, rr.Code)
-		assertApplicationJson(t, rr.Header())
-		var res rest.PropertyModel
-		require.NoError(t, json.NewDecoder(rr.Body).Decode(&res))
+		res := handleReq(t, s, postReq(t, route, body, headers))
+		require.Equal(t, http.StatusCreated, res.StatusCode)
+		assertApplicationJson(t, res.Header)
+		var created rest.PropertyModel
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&created))
 
 		// check response body for the echoed entity
-		assert.NotEmpty(t, res.ID)
-		assertEqual(t, p1.Street, res.Street)
-		assertEqual(t, p1.City, res.City)
-		assertEqual(t, p1.StateCode, res.State)
-		assertEqual(t, p1.Zip, res.Zip)
-		resCreatedAt, err := time.Parse(time.RFC3339, res.CreatedAt)
+		assert.NotEmpty(t, created.ID)
+		assertEqual(t, p1.Street, created.Street)
+		assertEqual(t, p1.City, created.City)
+		assertEqual(t, p1.StateCode, created.State)
+		assertEqual(t, p1.Zip, created.Zip)
+		resCreatedAt, err := time.Parse(time.RFC3339, created.CreatedAt)
 		require.NoError(t, err)
 		assertTimeRecent(t, resCreatedAt)
 
 		// check location header
 		// we should be able to use the location header to fetch the resource
-		loc := rr.Header().Get("Location")
+		loc := res.Header.Get("Location")
 		require.NotEmpty(t, loc)
 
 		// get property from route in location header
-		rr = httptest.NewRecorder()
-		s.ServeHTTP(rr, getReq(t, loc, headers))
-		require.Equal(t, http.StatusOK, rr.Code)
-		assertApplicationJson(t, rr.Header())
+		res = handleReq(t, s, getReq(t, loc, headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
+		assertApplicationJson(t, res.Header)
 
 		var fetched rest.PropertyModel
-		assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &fetched))
-		assertEqual(t, res.ID, fetched.ID)
+		assert.NoError(t, json.NewDecoder(res.Body).Decode(&fetched))
+		assertEqual(t, created.ID, fetched.ID)
 		assertEqual(t, p1.Street, fetched.Street)
 		assertEqual(t, p1.City, fetched.City)
 		assertEqual(t, p1.StateCode, fetched.State)
@@ -131,19 +82,18 @@ func TestAddProperty(t *testing.T) {
 			"zip":    p1.Zip,
 		}
 
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, putReq(t, route, body, headers))
-		require.Equal(t, http.StatusCreated, rr.Code)
-		var res rest.PropertyModel
-		assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &res))
+		res := handleReq(t, s, putReq(t, route, body, headers))
+		require.Equal(t, http.StatusCreated, res.StatusCode)
+		var created rest.PropertyModel
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&created))
 
 		// check response body for the echoed entity
-		assertEqual(t, p1.ID, res.ID)
-		assertEqual(t, p1.Street, res.Street)
-		assertEqual(t, p1.City, res.City)
-		assertEqual(t, p1.StateCode, res.State)
-		assertEqual(t, p1.Zip, res.Zip)
-		resCreatedAt, err := time.Parse(time.RFC3339, res.CreatedAt)
+		assertEqual(t, p1.ID, created.ID)
+		assertEqual(t, p1.Street, created.Street)
+		assertEqual(t, p1.City, created.City)
+		assertEqual(t, p1.StateCode, created.State)
+		assertEqual(t, p1.Zip, created.Zip)
+		resCreatedAt, err := time.Parse(time.RFC3339, created.CreatedAt)
 		require.NoError(t, err)
 		assertTimeRecent(t, resCreatedAt)
 	})
@@ -160,25 +110,23 @@ func TestAddProperty(t *testing.T) {
 			"state":  p1.StateCode,
 			"zip":    p1.Zip,
 		}
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, putReq(t, route, body, headers))
-		require.Equal(t, http.StatusCreated, rr.Code)
+		res := handleReq(t, s, putReq(t, route, body, headers))
+		require.Equal(t, http.StatusCreated, res.StatusCode)
 
 		// update property fixing typo mistake
 		body["street"] = p1.Street
-		rr = httptest.NewRecorder()
-		s.ServeHTTP(rr, putReq(t, route, body, headers))
-		assert.Equal(t, http.StatusOK, rr.Code)
+		res = handleReq(t, s, putReq(t, route, body, headers))
+		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-		var res rest.PropertyModel
-		assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &res))
+		var updated rest.PropertyModel
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&updated))
 
 		// check response body for the echoed entity
-		assertEqual(t, p1.ID, res.ID)
-		assertEqual(t, p1.Street, res.Street)
-		assertEqual(t, p1.City, res.City)
-		assertEqual(t, p1.StateCode, res.State)
-		assertEqual(t, p1.Zip, res.Zip)
+		assertEqual(t, p1.ID, updated.ID)
+		assertEqual(t, p1.Street, updated.Street)
+		assertEqual(t, p1.City, updated.City)
+		assertEqual(t, p1.StateCode, updated.State)
+		assertEqual(t, p1.Zip, updated.Zip)
 	})
 }
 func TestAddProperty_badRequest(t *testing.T) {
@@ -206,10 +154,8 @@ func TestAddProperty_badRequest(t *testing.T) {
 	}
 	for name, body := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := postReq(t, route, body, headers)
-			rr := httptest.NewRecorder()
-			s.ServeHTTP(rr, req)
-			assertEqual(t, http.StatusBadRequest, rr.Code)
+			res := handleReq(t, s, postReq(t, route, body, headers))
+			assertEqual(t, http.StatusBadRequest, res.StatusCode)
 		})
 	}
 }
@@ -224,13 +170,11 @@ func TestListProperties(t *testing.T) {
 			s    = rest.NewServer(repo).WithConfig(noAuthConf(t))
 		)
 
-		req := getReq(t, route, headers)
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusOK, rr.Code)
+		res := handleReq(t, s, getReq(t, route, headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
 
 		var propList rest.PropertyList
-		require.NoError(t, json.NewDecoder(rr.Body).Decode(&propList))
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&propList))
 		assert.Len(t, propList.Items, 0)
 	})
 	t.Run("200 list two properties", func(t *testing.T) {
@@ -246,13 +190,11 @@ func TestListProperties(t *testing.T) {
 		require.NoError(t, repo.StoreProperty(ctx, p2))
 
 		// list via API
-		req := getReq(t, route, headers)
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusOK, rr.Code)
+		res := handleReq(t, s, getReq(t, route, headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
 
 		var propList rest.PropertyList
-		assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &propList))
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&propList))
 		assert.Len(t, propList.Items, 2)
 
 		// ensure those results are among the properties added
@@ -289,19 +231,17 @@ func TestGetProperty(t *testing.T) {
 		require.NoError(t, repo.StoreProperty(ctx, p1))
 
 		// get property via API
-		req := getReq(t, route, headers)
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusOK, rr.Code)
+		res := handleReq(t, s, getReq(t, route, headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
 
 		// check response data structure
-		var res rest.PropertyModel
-		require.NoError(t, json.NewDecoder(rr.Body).Decode(&res))
-		assertEqual(t, p1.ID, res.ID)
-		assertEqual(t, p1.Street, res.Street)
-		assertEqual(t, p1.City, res.City)
-		assertEqual(t, p1.StateCode, res.State)
-		assertEqual(t, p1.Zip, res.Zip)
+		var resData rest.PropertyModel
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resData))
+		assertEqual(t, p1.ID, resData.ID)
+		assertEqual(t, p1.Street, resData.Street)
+		assertEqual(t, p1.City, resData.City)
+		assertEqual(t, p1.StateCode, resData.State)
+		assertEqual(t, p1.Zip, resData.Zip)
 	})
 	t.Run("404 get unknown property", func(t *testing.T) {
 		var (
@@ -309,13 +249,10 @@ func TestGetProperty(t *testing.T) {
 			route = routeBase + p1.ID
 		)
 
-		req := getReq(t, route, headers)
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusNotFound, rr.Code)
+		res := handleReq(t, s, getReq(t, route, headers))
+		require.Equal(t, http.StatusNotFound, res.StatusCode)
 	})
 }
-
 func TestDeleteProperty(t *testing.T) {
 	var (
 		routeBase = "/property/"
@@ -332,10 +269,8 @@ func TestDeleteProperty(t *testing.T) {
 		require.NoError(t, repo.StoreProperty(ctx, p1))
 
 		// del property via API
-		req := delReq(t, route, headers)
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusNoContent, rr.Code)
+		res := handleReq(t, s, delReq(t, route, headers))
+		require.Equal(t, http.StatusNoContent, res.StatusCode)
 
 		// property should not be retrievable by repo anymore
 		_, err := repo.RetrieveProperty(ctx, p1.ID)
@@ -356,14 +291,12 @@ func TestDeleteProperty(t *testing.T) {
 
 		// del property via API
 		req := delReq(t, route, headers)
-		rr := httptest.NewRecorder()
-		s.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusNoContent, rr.Code)
+		res := handleReq(t, s, req)
+		require.Equal(t, http.StatusNoContent, res.StatusCode)
 
 		// del property again via API - idempotent check
-		rr = httptest.NewRecorder()
-		s.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusNoContent, rr.Code)
+		res = handleReq(t, s, req)
+		require.Equal(t, http.StatusNoContent, res.StatusCode)
 	})
 }
 
@@ -416,12 +349,11 @@ func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 				"zip":    p1.Zip,
 			}
 
-			rr := httptest.NewRecorder()
-			s.ServeHTTP(rr, putReq(t, route, body, map[string]string{
+			res := handleReq(t, s, putReq(t, route, body, map[string]string{
 				rest.HeaderAPIKey:    reqKey,
 				rest.HeaderAPISecret: reqSecret,
 			}))
-			require.Equal(t, tc.code, rr.Code, "%s:%s %s:%s", tc.k, tc.s, tc.rk, tc.rs)
+			require.Equal(t, tc.code, res.StatusCode, "%s:%s %s:%s", tc.k, tc.s, tc.rk, tc.rs)
 		})
 	}
 }

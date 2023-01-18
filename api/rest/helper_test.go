@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -49,10 +50,11 @@ func httpReq(t testing.TB, method string, route string, body interface{}, header
 	require.NoError(t, err)
 	return req
 }
-func execReq(t testing.TB, req *http.Request) *http.Response {
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	return res
+func handleReq(t testing.TB, h http.Handler, req *http.Request) *http.Response {
+	t.Helper()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	return rr.Result()
 }
 
 type reqBuilder struct {
