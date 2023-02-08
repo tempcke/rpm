@@ -29,6 +29,25 @@ func testStoreAndRetrieveProperty(t *testing.T, r Repo) {
 	assertTimestampMatch(t, pIn.CreatedAt, pOut.CreatedAt)
 }
 
+func testUpdateProperty(t *testing.T, r Repo) {
+	// insert
+	pIn := newPropertyFixture(r)
+	require.NoError(t, r.StoreProperty(ctx, pIn))
+
+	// update
+	pIn.Street = "1" + pIn.Street
+	require.NoError(t, r.StoreProperty(ctx, pIn))
+
+	// select
+	pOut, err := r.RetrieveProperty(ctx, pIn.ID)
+	require.NoError(t, err)
+	assert.Equal(t, pIn.ID, pOut.ID)
+	assert.Equal(t, pIn.Street, pOut.Street)
+	assert.Equal(t, pIn.City, pOut.City)
+	assert.Equal(t, pIn.StateCode, pOut.StateCode)
+	assert.Equal(t, pIn.Zip, pOut.Zip)
+	assertTimestampMatch(t, pIn.CreatedAt, pOut.CreatedAt)
+}
 func testListProperties(t *testing.T, r Repo) {
 	props := make(map[string]entity.Property, 3)
 	for i := 0; i < 3; i++ {

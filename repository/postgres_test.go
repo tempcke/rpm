@@ -16,13 +16,17 @@ var _ usecase.PropertyRepository = (*repository.Postgres)(nil)
 func TestPropertyRepository(t *testing.T) {
 	r := repository.NewPostgresRepo(test.DB(t))
 
-	t.Run("store and retrieve property", func(t *testing.T) {
-		testStoreAndRetrieveProperty(t, r)
-	})
-	t.Run("list properties", func(t *testing.T) {
-		testListProperties(t, r)
-	})
-	t.Run("remove property", func(t *testing.T) {
-		testRemoveProperty(t, r)
-	})
+	tests := map[string]struct {
+		fn func(*testing.T, Repo)
+	}{
+		"store":  {testStoreAndRetrieveProperty},
+		"update": {testUpdateProperty},
+		"list":   {testListProperties},
+		"remove": {testRemoveProperty},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			tc.fn(t, r)
+		})
+	}
 }

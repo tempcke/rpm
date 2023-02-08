@@ -32,9 +32,12 @@ func (r Postgres) NewProperty(street, city, state, zip string) entity.Property {
 // StoreProperty persists a property
 func (r Postgres) StoreProperty(ctx context.Context, property entity.Property) error {
 	query := `
-		INSERT INTO properties
-		(id, street, city, state, zip, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO properties (
+			id, street, city, state, zip, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6)
+
+		ON CONFLICT (id) DO UPDATE SET
+			street=$2, city=$3, state=$4, zip=$5
 	`
 
 	stmt, err := r.db.PrepareContext(ctx, query)
@@ -52,7 +55,10 @@ func (r Postgres) StoreProperty(ctx context.Context, property entity.Property) e
 		property.CreatedAt,
 	)
 
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // RetrieveProperty by id

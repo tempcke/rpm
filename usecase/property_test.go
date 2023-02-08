@@ -19,20 +19,18 @@ func TestAddProperty(t *testing.T) {
 	t.Run("sunny day", func(t *testing.T) {
 		p := repo.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
 
-		e1 := uc.Execute(ctx, p)
-		_, e2 := repo.RetrieveProperty(ctx, p.ID)
+		require.NoError(t, uc.Execute(ctx, p))
+		_, err := repo.RetrieveProperty(ctx, p.ID)
 
-		assert.Nil(t, e1)
-		assert.Nil(t, e2)
+		require.NoError(t, err)
 	})
 
 	t.Run("invalid property can not be saved", func(t *testing.T) {
 		p := repo.NewProperty("", "a", "b", "c")
-		assert.Error(t, p.Validate())
-		e1 := uc.Execute(ctx, p)
-		_, e2 := repo.RetrieveProperty(ctx, p.ID)
-		assert.Error(t, e1)
-		assert.Error(t, e2)
+		require.Error(t, p.Validate())
+		require.Error(t, uc.Execute(ctx, p))
+		_, err := repo.RetrieveProperty(ctx, p.ID)
+		require.Error(t, err)
 	})
 }
 

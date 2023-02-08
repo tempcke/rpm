@@ -57,7 +57,7 @@ func storeProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 		property.ID = propertyID
 
 		if err := uc.Execute(ctx, property); err != nil {
-			errorResponse(w, http.StatusBadRequest, "Missing or invalid fields")
+			errorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
 

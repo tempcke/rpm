@@ -51,11 +51,10 @@ func WithField(key string, value interface{}) *logrus.Entry {
 }
 
 func TerminalLogger() logrus.FieldLogger {
-	formatter := new(logrus.TextFormatter)
-	formatter.ForceColors = true
-
 	l := logrus.StandardLogger()
-	l.Formatter = formatter
+	l.SetFormatter(&logrus.TextFormatter{
+		ForceColors: true,
+	})
 	l.SetLevel(logLevel(logrus.ErrorLevel))
 	return l
 }
@@ -72,14 +71,9 @@ func defaultLogger() logrus.FieldLogger {
 
 func logLevel(fallback logrus.Level) logrus.Level {
 	if ll := viper.GetString(EnvLogLevel); ll != "" {
-		lvl, err := logrus.ParseLevel(ll)
-		if err == nil {
+		if lvl, err := logrus.ParseLevel(ll); err == nil {
 			return lvl
 		}
-		logrus.
-			WithError(err).
-			WithField("LOG_LEVEL", ll).
-			Warn("unable to parse LOG_LEVEL")
 	}
 	return fallback
 }
