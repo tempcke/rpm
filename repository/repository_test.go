@@ -9,12 +9,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/usecase"
 )
 
 type Repo usecase.PropertyRepository
 
 var ctx = context.Background()
+
+var repoTests = map[string]struct {
+	fn func(*testing.T, Repo)
+}{
+	"store":  {testStoreAndRetrieveProperty},
+	"update": {testUpdateProperty},
+	"list":   {testListProperties},
+	"remove": {testRemoveProperty},
+	"get":    {testGetProperty},
+}
 
 func testStoreAndRetrieveProperty(t *testing.T, r Repo) {
 	pIn := newPropertyFixture(r)
@@ -28,7 +39,6 @@ func testStoreAndRetrieveProperty(t *testing.T, r Repo) {
 	assert.Equal(t, pIn.Zip, pOut.Zip)
 	assertTimestampMatch(t, pIn.CreatedAt, pOut.CreatedAt)
 }
-
 func testUpdateProperty(t *testing.T, r Repo) {
 	// insert
 	pIn := newPropertyFixture(r)
@@ -79,7 +89,6 @@ func testListProperties(t *testing.T, r Repo) {
 	// properties are deleted as they are found so there should be none left
 	assert.Len(t, props, 0)
 }
-
 func testRemoveProperty(t *testing.T, r Repo) {
 	// create and store property
 	p := newPropertyFixture(r)
@@ -90,6 +99,13 @@ func testRemoveProperty(t *testing.T, r Repo) {
 	// try to retrieve property
 	_, err = r.RetrieveProperty(ctx, p.ID)
 	assert.Error(t, err)
+}
+func testGetProperty(t *testing.T, r Repo) {
+	id := "id-does-not-exist"
+	pOut, err := r.RetrieveProperty(ctx, id)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, internal.ErrEntityNotFound)
+	assert.Empty(t, pOut)
 }
 
 // helper functions

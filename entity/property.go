@@ -1,6 +1,10 @@
 package entity
 
-import "time"
+import (
+	"time"
+
+	"github.com/tempcke/rpm/internal"
+)
 
 // Property entity
 type Property struct {
@@ -33,7 +37,12 @@ func (p Property) GetID() string {
 // Validate is used to validate the entity
 func (p Property) Validate() error {
 	if p.ID == "" || p.Street == "" || p.City == "" || p.StateCode == "" || p.Zip == "" {
-		return ErrInvalidEntity
+		return internal.ErrEntityInvalid
 	}
 	return nil
+}
+
+func (p Property) WithID(id string) Property {
+	p.ID = id
+	return p
 }

@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"strings"
 
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/internal"
 )
 
 // Postgres repository should NOT be used in production
@@ -75,9 +77,15 @@ func (r Postgres) RetrieveProperty(ctx context.Context, id string) (entity.Prope
 		&p.StateCode, &p.Zip, &p.CreatedAt,
 	)
 
+	if err != nil {
+		if strings.Contains(err.Error(), "no rows") {
+			return p, internal.ErrEntityNotFound
+		}
+		return p, internal.NewErrors(internal.ErrInternal, err)
+	}
 	p.CreatedAt = p.CreatedAt.Local()
 
-	return p, err
+	return p, nil
 }
 
 // PropertyList is used to list properties

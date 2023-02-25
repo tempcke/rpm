@@ -16,7 +16,7 @@ func addProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 			return
 		}
 
-		uc := usecase.NewAddProperty(propRepo)
+		uc := usecase.NewStoreProperty(propRepo)
 		property := propRepo.NewProperty(
 			data.Street, data.City, data.State, data.Zip,
 		)
@@ -50,7 +50,7 @@ func storeProperty(propRepo usecase.PropertyRepository) http.HandlerFunc {
 			return
 		}
 
-		uc := usecase.NewAddProperty(propRepo)
+		uc := usecase.NewStoreProperty(propRepo)
 		property := propRepo.NewProperty(
 			data.Street, data.City, data.State, data.Zip,
 		)

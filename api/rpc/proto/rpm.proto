@@ -1,0 +1,39 @@
+syntax = "proto3";
+package rpmpb;
+option go_package = "github.com/tempcke/rpm/api/rpc/pb";
+
+message Property {
+  string propertyID = 1;
+  string street = 2;
+  string city = 3;
+  string state = 4;
+  string zip = 5;
+}
+message StorePropertyReq {
+  string propertyID = 1; // uuid generated when omitted
+  string street = 2;
+  string city = 3;
+  string state = 4;
+  string zip = 5;
+}
+message StorePropertyRes {
+  string propertyID = 1;
+}
+message GetPropertyReq {
+  string propertyID = 1;
+}
+message GetPropertyRes {
+  Property property = 1;
+}
+message RemovePropertyReq {
+  string propertyID = 1;
+}
+message RemovePropertyRes {}
+message PropertyFilter {}
+
+service RPM {
+  rpc StoreProperty(StorePropertyReq) returns (StorePropertyRes);
+  rpc GetProperty(GetPropertyReq) returns (GetPropertyRes);
+  rpc RemoveProperty(RemovePropertyReq) returns (RemovePropertyRes);
+  rpc ListProperties(PropertyFilter) returns (stream Property);
+}

@@ -1,31 +1,21 @@
-FROM golang:alpine AS build
-RUN  apk update \
-  && apk add curl \
-            git \
-            bash \
-            make \
-            ca-certificates \
-  && rm -rf /var/cache/apk/*
+FROM golang:1.19-alpine AS builder
 
 WORKDIR /app
 
-# copy module files first so that they don't need to be downloaded again if no change
-COPY go.* ./
-RUN go mod download
-RUN go mod verify
+# no longer needed because of vendor folder.
+# go.mod go.sum
+#COPY go.* ./
+#RUN go mod download
+#RUN go mod verify
 
 # copy source files and build the binary
 COPY . .
-RUN make build
+RUN go build -o bin/rpm cmd/rpmserver/*.go
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates bash
-RUN mkdir -p /var/log/app
-WORKDIR /app/
-COPY --from=build /usr/local/bin/migrate /usr/local/bin
-COPY --from=build /app/migrations ./migrations/
-COPY --from=build /app/server .
-COPY --from=build /app/cmd/server/entrypoint.sh .
-COPY --from=build /app/config/*.yml ./config/
-RUN ls -la
-ENTRYPOINT ["./entrypoint.sh"]
+FROM alpine:3.16.2
+RUN apk add --no-cache \
+    ca-certificates \
+    postgresql-client
+WORKDIR /app
+COPY --from=builder /app/bin/rpm .
+CMD ["./rpm"]

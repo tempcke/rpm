@@ -12,13 +12,9 @@ var _ usecase.PropertyRepository = (*repository.InMemory)(nil)
 func TestInMemoryRepository(t *testing.T) {
 	r := repository.NewInMemoryRepo()
 
-	t.Run("store and retrieve property", func(t *testing.T) {
-		testStoreAndRetrieveProperty(t, r)
-	})
-	t.Run("list properties", func(t *testing.T) {
-		testListProperties(t, r)
-	})
-	t.Run("remove property", func(t *testing.T) {
-		testRemoveProperty(t, r)
-	})
+	for name, tc := range repoTests {
+		t.Run(name, func(t *testing.T) {
+			tc.fn(t, r)
+		})
+	}
 }

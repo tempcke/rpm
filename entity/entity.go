@@ -1,14 +1,7 @@
 package entity
 
 import (
-	"errors"
-
 	"github.com/google/uuid"
-)
-
-var (
-	// ErrInvalidEntity is an invalid entity error
-	ErrInvalidEntity = errors.New("invalid entity")
 )
 
 // Entity interface

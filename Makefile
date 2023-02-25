@@ -18,30 +18,31 @@ lint:				## fmt, vet, and staticcheck
 
 test:				## execute tests
 	godotenv time -p go test -failfast -race -count=1 ./... -cover | grep -v '\[no test'
-
 testAll: dockerUp	## run all tests including those that need docker/postgres
 	godotenv time -p go test -failfast -p=1 -count=1 ./... -tags=withDocker -cover | grep -v '\[no test'
-
 testCI:				## exact tests the way buildkite does, use for local debug of buildkite failure
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci run --rm appci /bin/sh -e -c 'bash pipeline/test.sh' || true
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
 
 dockerUp: init		## docker-compose up
-	@if [ ! "$(shell docker-compose ps --services --filter "status=running")" = "postgres" ]; then \
+	@if [ ! "$(shell docker-compose ps --services --filter "status=running" | grep postgres)" = "postgres" ]; then \
 		docker-compose up -d; \
-		sleep 3; \
 	fi
-
 dockerDown:	init	## docker-compose down
 	docker-compose down
-
 dockerRestart: dockerDown dockerUp	## dockerDown && dockerUp
 
-apiCheck: dockerRestart 	## generate api docs in apicheck.md
-	godotenv ./apicheck.sh
+dockerRestartApp: dockerUp	## rebuild app and replace running container
+	docker-compose up -d --no-deps --build app
 
-clean: dockerDown	## dockerDown && docker-compose down for CI
+apiCheck: dockerUp 	## generate api docs in apicheck.md
+	docker-compose stop -t 1 app
+	godotenv ./apicheck.sh
+	docker-compose start app
+
+clean: dockerDown ## dockerDown && docker-compose down for CI
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
+	rm bin/rpm
 
 init: .env .git/hooks/pre-commit
 
@@ -50,5 +51,13 @@ init: .env .git/hooks/pre-commit
 
 .git/hooks/pre-commit:
 	cp -r .githooks/* .git/hooks/
+
+protoc:
+	@rm -f ./api/rpc/proto/*.go
+	@rm -rf ./api/rpc/proto/api
+	protoc -I=./api/rpc/proto \
+		--go_out=./api/rpc/proto --go_opt=paths=source_relative \
+		--go-grpc_out=./api/rpc/proto --go-grpc_opt=paths=source_relative \
+		./api/rpc/proto/rpm.proto
 
 .PHONY: help check lint test testAll testCI dockerUp dockerDown dockerRestart clean init

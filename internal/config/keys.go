@@ -6,6 +6,7 @@ const (
 	LogLevel  = "LOG_LEVEL"
 	AppName   = "APP_NAME"
 	AppPort   = "APP_PORT"
+	GrpcPort  = "GRPC_PORT"
 
 	PostgresDSN           = "POSTGRES_DSN"
 	PostgresDB            = "POSTGRES_DB"

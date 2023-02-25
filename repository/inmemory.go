@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/internal"
 )
 
 // InMemory repository should NOT be used in production
@@ -34,7 +34,7 @@ func (r InMemory) NewProperty(street, city, state, zip string) entity.Property {
 func (r InMemory) RetrieveProperty(_ context.Context, id string) (entity.Property, error) {
 	p, ok := r.properties[id]
 	if !ok {
-		return p, errors.New("property not found")
+		return p, internal.MakeErr(internal.ErrEntityNotFound, "property["+id+"]")
 	}
 	return p, nil
 }

@@ -357,3 +357,22 @@ func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 		})
 	}
 }
+func TestHealth(t *testing.T) {
+	var (
+		headers map[string]string
+		repo    = repository.NewInMemoryRepo()
+		s       = rest.NewServer(repo).WithConfig(noAuthConf(t))
+	)
+	t.Run("health", func(t *testing.T) {
+		res := handleReq(t, s, getReq(t, "/health", headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
+	})
+	t.Run("ready", func(t *testing.T) {
+		res := handleReq(t, s, getReq(t, "/health/ready", headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
+	})
+	t.Run("live", func(t *testing.T) {
+		res := handleReq(t, s, getReq(t, "/health/live", headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
+	})
+}

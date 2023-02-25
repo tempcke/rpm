@@ -72,7 +72,7 @@ main() {
   echo "started server PID: $pid"
   echo "cleaning up database entities"
   echo "starting curl requests ..."
-  h1 "opp-inventory API check"
+  h1 "API check"
   p 'This is a generated document, to re-generate run: make apiCheck'
 
   execRoutes
@@ -108,12 +108,12 @@ curl -fsS -X PUT 'localhost:8080/property/property1' \
   "city": "Dallas",
   "state": "TX",
   "zip": "75401"
-}' | json_pp
+}'
 END
 )"
 getProperty1="$(cat <<'END'
 curl -fsS -X GET 'localhost:8080/property/property1' \
-  -H 'X-API-Key: key' -H 'X-API-Secret: secret' | json_pp
+  -H 'X-API-Key: key' -H 'X-API-Secret: secret'
 END
 )"
 putProperty2="$(cat <<'END'
@@ -126,7 +126,7 @@ curl -fsS -X PUT 'localhost:8080/property/property2' \
   "city": "Dallas",
   "state": "TX",
   "zip": "75401"
-}' | json_pp
+}'
 END
 )"
 delProperty2="$(cat <<'END'
@@ -136,7 +136,7 @@ END
 )"
 getProperties="$(cat <<'END'
 curl -fsS -X GET 'localhost:8080/property' \
-  -H 'X-API-Key: key' -H 'X-API-Secret: secret' | json_pp
+  -H 'X-API-Key: key' -H 'X-API-Secret: secret'
 END
 )"
 

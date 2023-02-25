@@ -32,17 +32,31 @@ func (s Server) WithConfig(conf config.Config) *Server {
 
 func (s *Server) InitRouter() {
 	r := chi.NewRouter()
-	r.Use(s.AuthMW)
-	r.Route("/property", func(r chi.Router) {
-		r.Post("/", addProperty(s.propRepo))
-		r.Get("/", listProperties(s.propRepo))
-		r.Route("/{propertyID}", func(r chi.Router) {
-			r.Put("/", storeProperty(s.propRepo))
-			r.Get("/", getProperty(s.propRepo))
-			r.Delete("/", deleteProperty(s.propRepo))
+
+	// no auth
+	r.Group(func(r chi.Router) {
+		r.Get("/health", s.okHandler)
+		r.Get("/health/ready", s.okHandler)
+		r.Get("/health/live", s.okHandler)
+	})
+
+	// with auth
+	r.Group(func(r chi.Router) {
+		r.Use(s.AuthMW)
+		r.Route("/property", func(r chi.Router) {
+			r.Post("/", addProperty(s.propRepo))
+			r.Get("/", listProperties(s.propRepo))
+			r.Route("/{propertyID}", func(r chi.Router) {
+				r.Put("/", storeProperty(s.propRepo))
+				r.Get("/", getProperty(s.propRepo))
+				r.Delete("/", deleteProperty(s.propRepo))
+			})
 		})
 	})
 	s.Handler = r
+}
+func (s *Server) okHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) AuthMW(next http.Handler) http.Handler {

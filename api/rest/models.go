@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/pkg/log"
 )
 
 // ErrorResponse response model
@@ -14,6 +15,22 @@ type ErrorResponse struct {
 // PropertyList response model
 type PropertyList struct {
 	Items []PropertyModel `json:"items"`
+}
+
+func (l PropertyList) ToProperties() []entity.Property {
+	properties := make([]entity.Property, len(l.Items))
+	for i, p := range l.Items {
+		createdAt, _ := time.Parse(time.RFC3339, p.CreatedAt)
+		properties[i] = entity.Property{
+			ID:        p.ID,
+			Street:    p.Street,
+			City:      p.City,
+			StateCode: p.State,
+			Zip:       p.Zip,
+			CreatedAt: createdAt,
+		}
+	}
+	return properties
 }
 
 // NewPropertyListModel constructs a PropertyList model from a set of properties
@@ -46,5 +63,20 @@ func NewPropertyModel(property entity.Property) PropertyModel {
 		State:     property.StateCode,
 		Zip:       property.Zip,
 		CreatedAt: property.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+func (m PropertyModel) ToProperty() *entity.Property {
+	createdAt, err := time.Parse(time.RFC3339, m.CreatedAt)
+	if err != nil {
+		log.WithError(err).Errorf("PropertyModel.ToProperty time.Parse failed to parse: [%s]", m.CreatedAt)
+	}
+	return &entity.Property{
+		ID:        m.ID,
+		Street:    m.Street,
+		City:      m.City,
+		StateCode: m.State,
+		Zip:       m.Zip,
+		CreatedAt: createdAt,
 	}
 }
