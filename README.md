@@ -4,11 +4,15 @@
 
 # Rental Property Manager (RPM)
 
+run `make help` for a list of commands
+running the tests requires some initialization which `make test` will do for you.
+
 ## Implemented Features
 - Store Property
 - List Properties
 - Get Property Details
 - Delete Property
+- gRPC and REST API
 
 ## Roadmap
 - List Properties

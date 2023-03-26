@@ -16,7 +16,7 @@ lint:				## fmt, vet, and staticcheck
 	go vet ./...
 	staticcheck -tags=withDocker ./...
 
-test:				## execute tests
+test: init			## execute tests
 	godotenv time -p go test -failfast -race -count=1 ./... -cover | grep -v '\[no test'
 testAll: dockerUp	## run all tests including those that need docker/postgres
 	godotenv time -p go test -failfast -p=1 -count=1 ./... -tags=withDocker -cover | grep -v '\[no test'
@@ -44,7 +44,7 @@ clean: dockerDown ## dockerDown && docker-compose down for CI
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
 	rm bin/rpm
 
-init: .env .git/hooks/pre-commit
+init: .env .git/hooks/pre-commit cert
 
 .env: .git/hooks/pre-commit ## copy .env.example to .env
 	cp .env.example .env
@@ -59,5 +59,14 @@ protoc:
 		--go_out=./api/rpc/proto --go_opt=paths=source_relative \
 		--go-grpc_out=./api/rpc/proto --go-grpc_opt=paths=source_relative \
 		./api/rpc/proto/rpm.proto
+
+cert: service.key ## Create certificates to encrypt the gRPC connection
+service.key:
+	openssl genrsa -out ca.key 4096
+	openssl req -new -x509 -key ca.key -sha256 -subj "/C=US/ST=NJ/O=CA, Inc." -days 365 -out ca.cert
+	openssl genrsa -out service.key 4096
+	openssl req -new -key service.key -out service.csr -config certificate.conf
+	openssl x509 -req -in service.csr -CA ca.cert -CAkey ca.key -CAcreateserial \
+		-out service.pem -days 365 -sha256 -extfile certificate.conf -extensions req_ext
 
 .PHONY: help check lint test testAll testCI dockerUp dockerDown dockerRestart clean init

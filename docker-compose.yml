@@ -38,6 +38,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_SSLMODE: disable
+      SERVICE_CERT_FILE: /app/service.pem
+      SERVICE_KEY_FILE: /app/service.key
     depends_on:
       postgres:
         condition: service_healthy

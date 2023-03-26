@@ -16,6 +16,10 @@ FROM alpine:3.16.2
 RUN apk add --no-cache \
     ca-certificates \
     postgresql-client
+
 WORKDIR /app
 COPY --from=builder /app/bin/rpm .
+COPY ./service.pem .
+COPY ./service.key .
+
 CMD ["./rpm"]

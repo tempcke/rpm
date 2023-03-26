@@ -14,11 +14,13 @@ import (
 	"github.com/tempcke/rpm/api/rest"
 	"github.com/tempcke/rpm/api/rpc"
 	pb "github.com/tempcke/rpm/api/rpc/proto"
+	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/config"
 	"github.com/tempcke/rpm/internal/db/postgres"
 	"github.com/tempcke/rpm/pkg/log"
 	"github.com/tempcke/rpm/repository"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 func main() {
@@ -77,13 +79,27 @@ func grpcServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
 	if err != nil {
 		return err
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpcOptions(conf, log)...)
 	rpcServer := rpc.NewServer(actions.NewActions(repo(db)))
 	pb.RegisterRPMServer(s, rpcServer)
 
 	log.Info("Listening on " + port)
 	fmt.Println("Listening on " + port)
 	return s.Serve(lis)
+}
+func grpcOptions(conf config.Config, log logrus.FieldLogger) []grpc.ServerOption {
+	var (
+		certFile = conf.GetString(internal.EnvServiceCertFile)
+		keyFile  = conf.GetString(internal.EnvServiceKeyFile)
+	)
+	if certFile == "" || keyFile == "" {
+		log.WithField("func", "main.grpcCreds").Fatal("Failed to setup TLS: cert and key file not configured")
+	}
+	creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+	if err != nil {
+		log.WithField("func", "main.grpcCreds").Fatalf("Failed to setup TLS: %v", err)
+	}
+	return []grpc.ServerOption{grpc.Creds(creds)}
 }
 
 var (

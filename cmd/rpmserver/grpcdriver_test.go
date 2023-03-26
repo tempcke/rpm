@@ -1,14 +1,22 @@
+//go:build withDocker
+// +build withDocker
+
 package main_test
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"sync"
 
+	"github.com/joho/godotenv"
 	pb "github.com/tempcke/rpm/api/rpc/proto"
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/specifications"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -105,10 +113,20 @@ func (d *grpcDriver) RemoveProperty(ctx context.Context, id specifications.ID) e
 }
 
 func (d *grpcDriver) getClient() (pb.RPMClient, error) {
-	d.connOnce.Do(func() {
-		dialOpts := []grpc.DialOption{
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
+	var (
+		certFile      = conf.GetString(internal.EnvServiceCertFile)
+		credentialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
+	)
+
+	if file := findCertFile(certFile); file != "" {
+		creds, err := credentials.NewClientTLSFromFile(file, "")
+		if err != nil {
+			return nil, err
 		}
+		credentialOpt = grpc.WithTransportCredentials(creds)
+	}
+	d.connOnce.Do(func() {
+		dialOpts := []grpc.DialOption{credentialOpt}
 		d.conn, d.connErr = grpc.Dial(d.Addr, dialOpts...)
 		d.client = pb.NewRPMClient(d.conn)
 	})
@@ -116,5 +134,18 @@ func (d *grpcDriver) getClient() (pb.RPMClient, error) {
 		return nil, err
 	}
 	return d.client, nil
+}
 
+func findCertFile(relPath string) string {
+	if relPath == "" {
+		return ""
+	}
+	for i := 0; i < 10; i++ {
+		if _, err := os.Stat(relPath); err == nil {
+			_ = godotenv.Load(relPath)
+			return relPath
+		}
+		relPath = fmt.Sprintf("../%s", relPath)
+	}
+	return ""
 }
