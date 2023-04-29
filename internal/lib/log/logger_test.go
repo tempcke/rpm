@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tempcke/rpm/pkg/log"
+	"github.com/tempcke/rpm/internal/lib/log"
 )
 
 type myLogger struct {

@@ -1,6 +1,6 @@
 package flows
 
-import "github.com/tempcke/rpm/pkg/mig"
+import "github.com/tempcke/rpm/internal/lib/mig"
 
 const idPrefix = "rpm"
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/tempcke/rpm/internal/config"
-	"github.com/tempcke/rpm/pkg/log"
+	"github.com/tempcke/rpm/internal/lib/log"
 )
 
 var _conf config.Config

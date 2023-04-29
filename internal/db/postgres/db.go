@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/tempcke/rpm/internal/db/postgres/migrate"
-	"github.com/tempcke/rpm/pkg/log"
+	"github.com/tempcke/rpm/internal/lib/log"
 )
 
 var _db *sql.DB

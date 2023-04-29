@@ -5,7 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/tempcke/rpm/internal/db/postgres/migrate/flows"
-	"github.com/tempcke/rpm/pkg/mig"
+	"github.com/tempcke/rpm/internal/lib/mig"
 )
 
 var allFlows = []*mig.Flow{

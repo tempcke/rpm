@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/tempcke/rpm/pkg/log"
+	"github.com/tempcke/rpm/internal/lib/log"
 )
 
 func decodeRequestData(w http.ResponseWriter, body io.Reader, data interface{}) error {

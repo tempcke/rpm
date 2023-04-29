@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/tempcke/rpm/entity"
-	"github.com/tempcke/rpm/pkg/log"
+	"github.com/tempcke/rpm/internal/lib/log"
 )
 
 // ErrorResponse response model

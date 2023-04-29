@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tempcke/rpm/pkg/mig"
+	"github.com/tempcke/rpm/internal/lib/mig"
 )
 
 // prefix should be unique per module
