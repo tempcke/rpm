@@ -14,5 +14,5 @@ type ID uuid.UUID
 
 // NewID returns a new ID
 func NewID() string {
-	return uuid.New().String()
+	return uuid.NewString()
 }

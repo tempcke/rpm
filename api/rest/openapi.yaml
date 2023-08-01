@@ -1,0 +1,210 @@
+openapi: 3.0.3
+info:
+  title: Rental Property Manager (RPM)
+  description: |-
+    This project is really just a hobby project for now to play with different things.
+    
+    Some useful links:
+    - [Github repository](https://github.com/tempcke/rpm)
+    - [The source API definition](https://github.com/tempcke/rpm/api/rest/openapi.yaml)
+  license:
+    name: MIT License
+    url: https://github.com/tempcke/rpm/LICSENSE
+  version: 0.0.1
+externalDocs:
+  description: ReadMe docs
+  url: https://github.com/tempcke/rpm/README.md
+servers:
+  - url: https://localhost:8080
+paths:
+  /property:
+    post:
+      tags:
+        - property
+      summary: Add Property
+      description: add a property
+      operationId: addProperty
+      requestBody:
+        description: Add a property to manage
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Property'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/Property'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Property'
+        required: true
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '400':
+          description: Missing or invalid fields
+          content:
+            appliaction/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+    get:
+      tags:
+        - property
+      summary: List properties
+      description: Returns a single property
+      operationId: listProperties
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Property'
+  /property/{propertyId}:
+    put:
+      tags:
+        - property
+      summary: Store Property
+      description: Add or update an existing property by Id
+      operationId: storeProperty
+      parameters:
+        - name: propertyId
+          in: path
+          description: ID of property
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: store property
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Property'
+        required: true
+      responses:
+        '200':
+          description: Successful operation - update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '201':
+          description: Successful operation - insert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '400':
+          description: Missing or invalid fields
+          content:
+            appliaction/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+    get:
+      tags:
+        - property
+      summary: Find property by ID
+      description: Returns a single property
+      operationId: getPropertyById
+      parameters:
+        - name: propertyId
+          in: path
+          description: ID of property
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '404':
+          description: Property not found
+      security:
+        - key: []
+          secret: []
+    delete:
+      tags:
+        - property
+      summary: Deletes a property
+      description: delete a property
+      operationId: deleteProperty
+      parameters:
+        - name: propertyId
+          in: path
+          description: Property id to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Property removed or did not exist
+      security:
+        - key: []
+          secret: []
+components:
+  schemas:
+    Property:
+      required:
+        - street
+        - city
+        - state
+        - zip
+      type: object
+      properties:
+        id:
+          type: string
+          example: "2e6b722b-04a9-44f8-8afc-b9327d495467"
+        street:
+          type: string
+          example: "123 Main st."
+        city:
+          type: string
+          example: "Dallas"
+        state:
+          type: string
+          example: "TX"
+        zip:
+          type: string
+          example: "75401"
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              format: int32
+              example: 1002
+            type:
+              type: string
+              example: "validation"
+            message:
+              type: string
+              example: "state code is invalid"
+  securitySchemes:
+    key:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    secret:
+      type: apiKey
+      in: header
+      name: X-API-Secret
