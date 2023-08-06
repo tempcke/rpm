@@ -81,7 +81,7 @@ func (r Postgres) RetrieveProperty(ctx context.Context, id string) (entity.Prope
 		if strings.Contains(err.Error(), "no rows") {
 			return p, internal.ErrEntityNotFound
 		}
-		return p, internal.NewErrors(internal.ErrInternal, err)
+		return p, err
 	}
 	p.CreatedAt = p.CreatedAt.Local()
 

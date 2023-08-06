@@ -19,7 +19,7 @@ func NewActions(r usecase.PropertyRepository) Actions {
 	return Actions{Repo: r}
 }
 
-func (a Actions) AddRental(ctx context.Context, p entity.Property) (specifications.ID, error) {
+func (a Actions) StoreProperty(ctx context.Context, p entity.Property) (specifications.ID, error) {
 	if p.ID == "" {
 		p.ID = uuid.NewString()
 	}
@@ -29,16 +29,6 @@ func (a Actions) AddRental(ctx context.Context, p entity.Property) (specificatio
 	}
 	return p.ID, nil
 }
-
-func (a Actions) GetProperty(ctx context.Context, id string) (*entity.Property, error) {
-	uc := usecase.NewGetProperty(a.Repo)
-	p, err := uc.Execute(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return &p, nil
-}
-
 func (a Actions) RemoveProperty(ctx context.Context, id string) error {
 	uc := usecase.NewDeleteProperty(a.Repo)
 	return uc.Execute(ctx, id)
@@ -51,4 +41,12 @@ func (a Actions) ListProperties(ctx context.Context) ([]entity.Property, error) 
 		return nil, err
 	}
 	return list, nil
+}
+func (a Actions) GetProperty(ctx context.Context, id string) (*entity.Property, error) {
+	uc := usecase.NewGetProperty(a.Repo)
+	p, err := uc.Execute(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
 }

@@ -67,16 +67,23 @@ func NewPropertyModel(property entity.Property) PropertyModel {
 }
 
 func (m PropertyModel) ToProperty() *entity.Property {
-	createdAt, err := time.Parse(time.RFC3339, m.CreatedAt)
-	if err != nil {
-		log.WithError(err).Errorf("PropertyModel.ToProperty time.Parse failed to parse: [%s]", m.CreatedAt)
-	}
 	return &entity.Property{
 		ID:        m.ID,
 		Street:    m.Street,
 		City:      m.City,
 		StateCode: m.State,
 		Zip:       m.Zip,
-		CreatedAt: createdAt,
+		CreatedAt: m.createdAtTime(),
 	}
+}
+func (m PropertyModel) createdAtTime() time.Time {
+	if m.CreatedAt == "" {
+		return time.Time{}
+	}
+	createdAt, err := time.Parse(time.RFC3339, m.CreatedAt)
+	if err != nil {
+		log.WithError(err).Errorf("PropertyModel.ToProperty time.Parse failed to parse: [%s]", m.CreatedAt)
+		return time.Time{}
+	}
+	return createdAt
 }

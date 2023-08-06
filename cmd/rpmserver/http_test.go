@@ -18,6 +18,11 @@ var httpClient = &http.Client{
 	Timeout: 1 * time.Second,
 }
 
+// TestHTTP runs against the binary running in docker, so you can't debug
+// through to the server code. on local make sure you `make dockerRestartApp`
+// before running this else it won't test the latest copy of the code
+// use rest/server_test to debug.
+// the main difference is that this tests the server as built by main()
 func TestHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
@@ -27,5 +32,18 @@ func TestHTTP(t *testing.T) {
 		Client:  httpClient,
 	}
 
-	specifications.AddRental(t, driver)
+	type (
+		specTest func(*testing.T, specifications.Driver)
+	)
+	var tests = map[string]struct{ specTest }{
+		"StoreProperty":  {specifications.AddRental},
+		"GetProperty":    {specifications.GetProperty},
+		"ListProperties": {specifications.ListProperties},
+		"RemoveProperty": {specifications.RemoveProperty},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			tc.specTest(t, &driver)
+		})
+	}
 }

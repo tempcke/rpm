@@ -42,7 +42,7 @@ func (s *Server) StoreProperty(ctx context.Context, req *pb.StorePropertyReq) (*
 		StateCode: req.State,
 		Zip:       req.Zip,
 	}
-	id, err := s.actions.AddRental(ctx, pIn)
+	id, err := s.actions.StoreProperty(ctx, pIn)
 	if err != nil {
 		// FIXME: return a proper grpc error status
 		return nil, err
@@ -51,7 +51,13 @@ func (s *Server) StoreProperty(ctx context.Context, req *pb.StorePropertyReq) (*
 	res := pb.StorePropertyRes{PropertyID: id}
 	return &res, nil
 }
-
+func (s *Server) RemoveProperty(ctx context.Context, req *pb.RemovePropertyReq) (*pb.RemovePropertyRes, error) {
+	if err := s.actions.RemoveProperty(ctx, req.GetPropertyID()); err != nil {
+		return nil, err // FIXME: use proper status error
+	}
+	res := &pb.RemovePropertyRes{}
+	return res, nil
+}
 func (s *Server) GetProperty(ctx context.Context, req *pb.GetPropertyReq) (*pb.GetPropertyRes, error) {
 	var propertyID = req.GetPropertyID()
 	p, err := s.actions.GetProperty(ctx, propertyID)
@@ -72,15 +78,6 @@ func (s *Server) GetProperty(ctx context.Context, req *pb.GetPropertyReq) (*pb.G
 	}
 	return &res, nil
 }
-
-func (s *Server) RemoveProperty(ctx context.Context, req *pb.RemovePropertyReq) (*pb.RemovePropertyRes, error) {
-	if err := s.actions.RemoveProperty(ctx, req.GetPropertyID()); err != nil {
-		return nil, err // FIXME: use proper status error
-	}
-	res := &pb.RemovePropertyRes{}
-	return res, nil
-}
-
 func (s *Server) ListProperties(filter *pb.PropertyFilter, stream pb.RPM_ListPropertiesServer) error {
 	var ctx = context.Background() // TODO: is there a better context to use?
 	properties, err := s.actions.ListProperties(ctx)

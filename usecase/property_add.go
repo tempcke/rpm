@@ -25,7 +25,11 @@ func (uc StoreProperty) Execute(ctx context.Context, property entity.Property) e
 	if err := property.Validate(); err != nil {
 		return err
 	}
-	return uc.propRepo.StoreProperty(ctx, property)
+	if err := uc.propRepo.StoreProperty(ctx, property); err != nil {
+		// TODO: make sure the error is logged here or in the repo layer
+		return internal.NewErrors(internal.ErrInternal, ErrRepo)
+	}
+	return nil
 }
 
 // Validate checks the state of this use case, such as if it has a usable repo or not

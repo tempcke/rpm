@@ -6,7 +6,7 @@ info:
     
     Some useful links:
     - [Github repository](https://github.com/tempcke/rpm)
-    - [The source API definition](https://github.com/tempcke/rpm/api/rest/openapi.yaml)
+    - [The source API definition](https://github.com/tempcke/rpm/blob/master/api/rest/openapi.yaml)
   license:
     name: MIT License
     url: https://github.com/tempcke/rpm/LICSENSE

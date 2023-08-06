@@ -4,22 +4,22 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/tempcke/rpm/actions"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/config"
-	"github.com/tempcke/rpm/usecase"
 )
 
 // Server is used to expose application over a restful API
 type Server struct {
 	http.Handler
-	propRepo usecase.PropertyRepository
-	Conf     config.Config
+	Conf    config.Config
+	actions actions.Actions
 }
 
 // NewServer constructs a Server
-func NewServer(propRepo usecase.PropertyRepository) *Server {
+func NewServer(acts actions.Actions) *Server {
 	server := new(Server)
-	server.propRepo = propRepo
+	server.actions = acts
 	server.InitRouter()
 	server.Conf = config.GetConfig()
 	return server
@@ -40,16 +40,18 @@ func (s *Server) InitRouter() {
 		r.Get("/health/live", s.okHandler)
 	})
 
+	ph := propertyHandler{actions: s.actions}
+
 	// with auth
 	r.Group(func(r chi.Router) {
 		r.Use(s.AuthMW)
 		r.Route("/property", func(r chi.Router) {
-			r.Post("/", addProperty(s.propRepo))
-			r.Get("/", listProperties(s.propRepo))
+			r.Post("/", ph.addProperty)
+			r.Get("/", ph.listProperties)
 			r.Route("/{propertyID}", func(r chi.Router) {
-				r.Put("/", storeProperty(s.propRepo))
-				r.Get("/", getProperty(s.propRepo))
-				r.Delete("/", deleteProperty(s.propRepo))
+				r.Put("/", ph.storeProperty)
+				r.Get("/", ph.getProperty)
+				r.Delete("/", ph.deleteProperty)
 			})
 		})
 	})

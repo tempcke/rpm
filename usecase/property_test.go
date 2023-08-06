@@ -2,8 +2,10 @@ package usecase_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tempcke/rpm/entity"
@@ -45,6 +47,22 @@ func TestAddProperty(t *testing.T) {
 		assert.ErrorIs(t, err, usecase.ErrRepoNotSet)
 		_, err = repo.RetrieveProperty(ctx, p.ID)
 		require.Error(t, err)
+	})
+	t.Run("any repo error should be internal", func(t *testing.T) {
+		var (
+			p       = entity.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
+			repoErr = fmt.Errorf("any database error %s", uuid.NewString())
+			repo    = repository.NewInMemoryRepo().WithPropertyErr(p.ID, repoErr)
+			uc      = usecase.NewStoreProperty(repo)
+			err     error
+		)
+		_, err = repo.RetrieveProperty(ctx, p.ID)
+		require.Error(t, err)
+
+		err = uc.Execute(ctx, p)
+		require.Error(t, err)
+		require.ErrorIs(t, err, internal.ErrInternal)
+		require.ErrorIs(t, err, usecase.ErrRepo)
 	})
 }
 func TestListProperties(t *testing.T) {

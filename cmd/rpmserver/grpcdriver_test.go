@@ -33,7 +33,7 @@ type grpcDriver struct {
 	client   pb.RPMClient
 }
 
-func (d *grpcDriver) AddRental(ctx context.Context, p entity.Property) (specifications.ID, error) {
+func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (specifications.ID, error) {
 	client, err := d.getClient()
 	if err != nil {
 		return "", err

@@ -34,17 +34,19 @@ func panicOnErr(label string, err error) {
 }
 
 //lint:ignore U1000 keep it for dev testing
-func TLogJson(t testing.TB, label string, v interface{}) {
+func TLogJson(t testing.TB, label string, v any) {
+	t.Helper()
+	t.Logf("%s: %s", label, JSONString(t, v))
+}
+func JSONString(t testing.TB, v any) string {
 	t.Helper()
 	if r, ok := v.(io.Reader); ok {
-		bytes, err := io.ReadAll(r)
+		b, err := io.ReadAll(r)
 		require.NoError(t, err)
-		require.NotEmpty(t, bytes)
-		var v2 interface{}
-		require.NoError(t, json.Unmarshal(bytes, &v2))
-		v = v2
+		// require.NotEmpty(t, b)
+		return string(b)
 	}
 	b, err := json.MarshalIndent(v, "", "  ")
 	require.NoError(t, err)
-	t.Log(label + ": " + string(b))
+	return string(b)
 }

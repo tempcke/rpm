@@ -46,3 +46,12 @@ func (p Property) WithID(id string) Property {
 	p.ID = id
 	return p
 }
+
+func (p Property) Equal(p2 Property) bool {
+	idMatches := p.ID == "" || p2.ID == "" || p.ID == p2.ID
+	return idMatches &&
+		p.Street == p2.Street &&
+		p.City == p2.City &&
+		p.StateCode == p2.StateCode &&
+		p.Zip == p2.Zip
+}

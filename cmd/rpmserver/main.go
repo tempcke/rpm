@@ -57,7 +57,8 @@ func run(log logrus.FieldLogger) error {
 
 func restServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
 	var (
-		server = rest.NewServer(repo(db))
+		acts   = actions.NewActions(repo(db))
+		server = rest.NewServer(acts)
 		port   = ":" + conf.GetString(config.AppPort)
 	)
 	if port == ":" {

@@ -18,7 +18,7 @@ curl -fsS -X PUT 'localhost:8080/property/property1' \
 }' | json_pp
 {
    "city" : "Dallas",
-   "createdAt" : "2023-02-20T14:49:02-06:00",
+   "createdAt" : "2023-08-05T20:21:25-05:00",
    "id" : "property1",
    "state" : "TX",
    "street" : "123 Main st.",
@@ -32,7 +32,7 @@ curl -fsS -X GET 'localhost:8080/property/property1' \
   -H 'X-API-Key: key' -H 'X-API-Secret: secret' | json_pp
 {
    "city" : "Dallas",
-   "createdAt" : "2023-02-20T14:49:02-06:00",
+   "createdAt" : "2023-08-05T20:21:25-05:00",
    "id" : "property1",
    "state" : "TX",
    "street" : "123 Main st.",
@@ -52,7 +52,7 @@ curl -fsS -X PUT 'localhost:8080/property/property2' \
   "state": "TX",
   "zip": "75401"
 }'
-{"id":"property2","street":"124 Main st.","city":"Dallas","state":"TX","zip":"75401","createdAt":"2023-02-20T14:49:02-06:00"}
+{"id":"property2","street":"124 Main st.","city":"Dallas","state":"TX","zip":"75401","createdAt":"2023-08-05T20:21:25-05:00"}
 curl -fsS -X DELETE 'localhost:8080/property/property2' \
   -H 'X-API-Key: key' -H 'X-API-Secret: secret'
 
@@ -66,7 +66,7 @@ curl -fsS -X GET 'localhost:8080/property' \
    "items" : [
       {
          "city" : "Dallas",
-         "createdAt" : "2023-02-20T14:49:02-06:00",
+         "createdAt" : "2023-08-05T20:21:25-05:00",
          "id" : "property1",
          "state" : "TX",
          "street" : "123 Main st.",

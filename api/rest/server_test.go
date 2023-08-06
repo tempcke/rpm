@@ -3,15 +3,18 @@ package rest_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tempcke/rpm/actions"
 	"github.com/tempcke/rpm/api/rest"
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/entity/fake"
+	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/repository"
 )
 
@@ -20,7 +23,7 @@ var ctx = context.Background()
 func TestPutProperty(t *testing.T) {
 	var (
 		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(repo).WithConfig(noAuthConf(t))
+		s       = rest.NewServer(actions.NewActions(repo)).WithConfig(noAuthConf(t))
 		headers map[string]string
 	)
 
@@ -37,7 +40,7 @@ func TestPutProperty(t *testing.T) {
 		}
 
 		res := handleReq(t, s, postReq(t, route, body, headers))
-		require.Equal(t, http.StatusCreated, res.StatusCode)
+		assertResCode(t, res, http.StatusCreated)
 		assertApplicationJson(t, res.Header)
 		var created rest.PropertyModel
 		require.NoError(t, json.NewDecoder(res.Body).Decode(&created))
@@ -95,6 +98,7 @@ func TestPutProperty(t *testing.T) {
 		assertEqual(t, p1.Zip, created.Zip)
 		resCreatedAt, err := time.Parse(time.RFC3339, created.CreatedAt)
 		require.NoError(t, err)
+		require.False(t, resCreatedAt.IsZero())
 		assertTimeRecent(t, resCreatedAt)
 	})
 	t.Run("200 put updated property", func(t *testing.T) {
@@ -134,7 +138,7 @@ func TestAddProperty_badRequest(t *testing.T) {
 		headers map[string]string
 		route   = "/property"
 		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(repo).WithConfig(noAuthConf(t))
+		s       = rest.NewServer(actions.NewActions(repo)).WithConfig(noAuthConf(t))
 	)
 	tests := map[string]struct {
 		body string
@@ -165,13 +169,9 @@ func TestListProperties(t *testing.T) {
 		headers map[string]string
 	)
 	t.Run("200 expect empty set when no properties exist", func(t *testing.T) {
-		var (
-			repo = repository.NewInMemoryRepo()
-			s    = rest.NewServer(repo).WithConfig(noAuthConf(t))
-		)
-
+		var s = newServer(t)
 		res := handleReq(t, s, getReq(t, route, headers))
-		require.Equal(t, http.StatusOK, res.StatusCode)
+		assertResCode(t, res, http.StatusOK)
 
 		var propList rest.PropertyList
 		require.NoError(t, json.NewDecoder(res.Body).Decode(&propList))
@@ -180,7 +180,8 @@ func TestListProperties(t *testing.T) {
 	t.Run("200 list two properties", func(t *testing.T) {
 		var (
 			repo = repository.NewInMemoryRepo()
-			s    = rest.NewServer(repo).WithConfig(noAuthConf(t))
+			s    = rest.NewServer(actions.NewActions(repo)).
+				WithConfig(noAuthConf(t))
 		)
 
 		// create two properties in propRepo
@@ -220,7 +221,8 @@ func TestGetProperty(t *testing.T) {
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(repo).WithConfig(noAuthConf(t))
+		s         = rest.NewServer(actions.NewActions(repo)).
+				WithConfig(noAuthConf(t))
 	)
 	t.Run("200 get property", func(t *testing.T) {
 		var (
@@ -258,7 +260,8 @@ func TestDeleteProperty(t *testing.T) {
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(repo).WithConfig(noAuthConf(t))
+		s         = rest.NewServer(actions.NewActions(repo)).
+				WithConfig(noAuthConf(t))
 	)
 	t.Run("204 delete property", func(t *testing.T) {
 		var (
@@ -303,6 +306,7 @@ func TestDeleteProperty(t *testing.T) {
 func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 	var (
 		repo = repository.NewInMemoryRepo()
+		acts = actions.NewActions(repo)
 	)
 
 	tests := map[string]struct {
@@ -340,7 +344,7 @@ func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 				reqSecret = tc.rs
 			)
 
-			s := rest.NewServer(repo).WithConfig(authConf(t, key, secret))
+			s := rest.NewServer(acts).WithConfig(authConf(t, key, secret))
 
 			body := map[string]string{
 				"street": p1.Street,
@@ -353,15 +357,14 @@ func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 				rest.HeaderAPIKey:    reqKey,
 				rest.HeaderAPISecret: reqSecret,
 			}))
-			require.Equal(t, tc.code, res.StatusCode, "%s:%s %s:%s", tc.k, tc.s, tc.rk, tc.rs)
+			assertResCode(t, res, tc.code, "%s:%s %s:%s", tc.k, tc.s, tc.rk, tc.rs)
 		})
 	}
 }
 func TestHealth(t *testing.T) {
 	var (
 		headers map[string]string
-		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(repo).WithConfig(noAuthConf(t))
+		s       = newServer(t)
 	)
 	t.Run("health", func(t *testing.T) {
 		res := handleReq(t, s, getReq(t, "/health", headers))
@@ -375,4 +378,30 @@ func TestHealth(t *testing.T) {
 		res := handleReq(t, s, getReq(t, "/health/live", headers))
 		require.Equal(t, http.StatusOK, res.StatusCode)
 	})
+}
+
+func assertResCode(t testing.TB, res *http.Response, code int, msgAndArgs ...any) {
+	t.Helper()
+	if res.StatusCode != code {
+		msg := fmtMsgAndArgs(msgAndArgs...)
+		t.Fatalf(
+			"unexpected response code\ngot  %d\nwant %d\nres  %s\nmsg  %v",
+			res.StatusCode, code, internal.JSONString(t, res.Body), msg)
+	}
+}
+func fmtMsgAndArgs(v ...any) string {
+	switch len(v) {
+	case 0:
+		return ""
+	case 1:
+		return v[0].(string)
+	default:
+		var msg = v[0].(string)
+		var args = v[1:]
+		return fmt.Sprintf(msg, args...)
+	}
+}
+func newServer(t testing.TB) *rest.Server {
+	var repo = repository.NewInMemoryRepo()
+	return rest.NewServer(actions.NewActions(repo)).WithConfig(noAuthConf(t))
 }

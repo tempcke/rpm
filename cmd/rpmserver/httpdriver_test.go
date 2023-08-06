@@ -22,7 +22,7 @@ type httpDriver struct {
 	Client  *http.Client
 }
 
-func (d httpDriver) AddRental(ctx context.Context, p entity.Property) (string, error) {
+func (d httpDriver) StoreProperty(ctx context.Context, p entity.Property) (string, error) {
 	if p.ID != "" {
 		return p.ID, d.addRentalWithID(ctx, p)
 	}
@@ -39,7 +39,7 @@ func (d httpDriver) AddRental(ctx context.Context, p entity.Property) (string, e
 		return "", err
 	}
 	if res.StatusCode != http.StatusCreated {
-		resData := internal.SPrintData("httpDriver.AddRental response body", res.Body)
+		resData := internal.SPrintData("httpDriver.StoreProperty response body", res.Body)
 		return "", fmt.Errorf("expected status 201 but got %v\n%s", res.StatusCode, resData)
 	}
 	var created rest.PropertyModel
@@ -75,6 +75,9 @@ func (d httpDriver) GetProperty(ctx context.Context, id ID) (*entity.Property, e
 	if err != nil {
 		return nil, err
 	}
+	if code := res.StatusCode; code >= 400 {
+		return nil, fmt.Errorf("expected 200 response, got %d", code)
+	}
 	var p rest.PropertyModel
 	if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
 		return nil, err
@@ -96,7 +99,7 @@ func (d httpDriver) ListProperties(ctx context.Context) ([]entity.Property, erro
 }
 func (d httpDriver) RemoveProperty(ctx context.Context, id ID) error {
 	url := d.BaseURL + "/property/" + id
-	req := getReq(url, d.headers()).WithContext(ctx)
+	req := delReq(url, d.headers()).WithContext(ctx)
 	res, err := d.Client.Do(req)
 	if err != nil {
 		return err
@@ -118,6 +121,9 @@ func (d httpDriver) headers() map[string]string {
 
 func getReq(route string, headers map[string]string) *http.Request {
 	return httpReq(http.MethodGet, route, nil, headers)
+}
+func delReq(route string, headers map[string]string) *http.Request {
+	return httpReq(http.MethodDelete, route, nil, headers)
 }
 func postReq(route string, body any, headers map[string]string) *http.Request {
 	return httpReq(http.MethodPost, route, body, headers)

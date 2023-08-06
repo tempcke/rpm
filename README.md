@@ -4,6 +4,8 @@
 
 # Rental Property Manager (RPM)
 
+[OpenAPI docs](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/tempcke/rpm/master/api/rest/openapi.yaml)
+
 run `make help` for a list of commands
 running the tests requires some initialization which `make test` will do for you.
 
