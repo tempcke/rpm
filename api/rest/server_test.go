@@ -23,7 +23,7 @@ var ctx = context.Background()
 func TestPutProperty(t *testing.T) {
 	var (
 		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(actions.NewActions(repo)).WithConfig(noAuthConf(t))
+		s       = rest.NewServer(actions.NewActionsWithRepo(repo)).WithConfig(noAuthConf(t))
 		headers map[string]string
 	)
 
@@ -138,7 +138,7 @@ func TestAddProperty_badRequest(t *testing.T) {
 		headers map[string]string
 		route   = "/property"
 		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(actions.NewActions(repo)).WithConfig(noAuthConf(t))
+		s       = rest.NewServer(actions.NewActionsWithRepo(repo)).WithConfig(noAuthConf(t))
 	)
 	tests := map[string]struct {
 		body string
@@ -180,7 +180,7 @@ func TestListProperties(t *testing.T) {
 	t.Run("200 list two properties", func(t *testing.T) {
 		var (
 			repo = repository.NewInMemoryRepo()
-			s    = rest.NewServer(actions.NewActions(repo)).
+			s    = rest.NewServer(actions.NewActionsWithRepo(repo)).
 				WithConfig(noAuthConf(t))
 		)
 
@@ -221,7 +221,7 @@ func TestGetProperty(t *testing.T) {
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(actions.NewActions(repo)).
+		s         = rest.NewServer(actions.NewActionsWithRepo(repo)).
 				WithConfig(noAuthConf(t))
 	)
 	t.Run("200 get property", func(t *testing.T) {
@@ -260,7 +260,7 @@ func TestDeleteProperty(t *testing.T) {
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(actions.NewActions(repo)).
+		s         = rest.NewServer(actions.NewActionsWithRepo(repo)).
 				WithConfig(noAuthConf(t))
 	)
 	t.Run("204 delete property", func(t *testing.T) {
@@ -276,7 +276,7 @@ func TestDeleteProperty(t *testing.T) {
 		require.Equal(t, http.StatusNoContent, res.StatusCode)
 
 		// property should not be retrievable by repo anymore
-		_, err := repo.RetrieveProperty(ctx, p1.ID)
+		_, err := repo.GetProperty(ctx, p1.ID)
 		assert.Error(t, err)
 	})
 	t.Run("204 delete is idempotent", func(t *testing.T) {
@@ -306,7 +306,7 @@ func TestDeleteProperty(t *testing.T) {
 func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 	var (
 		repo = repository.NewInMemoryRepo()
-		acts = actions.NewActions(repo)
+		acts = actions.NewActionsWithRepo(repo)
 	)
 
 	tests := map[string]struct {
@@ -403,5 +403,5 @@ func fmtMsgAndArgs(v ...any) string {
 }
 func newServer(t testing.TB) *rest.Server {
 	var repo = repository.NewInMemoryRepo()
-	return rest.NewServer(actions.NewActions(repo)).WithConfig(noAuthConf(t))
+	return rest.NewServer(actions.NewActionsWithRepo(repo)).WithConfig(noAuthConf(t))
 }

@@ -2,35 +2,28 @@ package repository_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/entity/fake"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/usecase"
 )
 
-type Repo usecase.PropertyRepository
+type (
+	propertyRepo = usecase.PropertyRepo
+	travelerRepo = usecase.TenantRepo
+)
 
 var ctx = context.Background()
 
-var repoTests = map[string]struct {
-	fn func(*testing.T, Repo)
-}{
-	"store":  {testStoreAndRetrieveProperty},
-	"update": {testUpdateProperty},
-	"list":   {testListProperties},
-	"remove": {testRemoveProperty},
-	"get":    {testGetProperty},
-}
-
-func testStoreAndRetrieveProperty(t *testing.T, r Repo) {
+func testStoreAndRetrieveProperty(t *testing.T, r propertyRepo) {
 	pIn := newPropertyFixture(r)
 	require.NoError(t, r.StoreProperty(ctx, pIn))
-	pOut, err := r.RetrieveProperty(ctx, pIn.ID)
+	pOut, err := r.GetProperty(ctx, pIn.ID)
 	require.NoError(t, err)
 	assert.Equal(t, pIn.ID, pOut.ID)
 	assert.Equal(t, pIn.Street, pOut.Street)
@@ -39,7 +32,7 @@ func testStoreAndRetrieveProperty(t *testing.T, r Repo) {
 	assert.Equal(t, pIn.Zip, pOut.Zip)
 	assertTimestampMatch(t, pIn.CreatedAt, pOut.CreatedAt)
 }
-func testUpdateProperty(t *testing.T, r Repo) {
+func testUpdateProperty(t *testing.T, r propertyRepo) {
 	// insert
 	pIn := newPropertyFixture(r)
 	require.NoError(t, r.StoreProperty(ctx, pIn))
@@ -49,7 +42,7 @@ func testUpdateProperty(t *testing.T, r Repo) {
 	require.NoError(t, r.StoreProperty(ctx, pIn))
 
 	// select
-	pOut, err := r.RetrieveProperty(ctx, pIn.ID)
+	pOut, err := r.GetProperty(ctx, pIn.ID)
 	require.NoError(t, err)
 	assert.Equal(t, pIn.ID, pOut.ID)
 	assert.Equal(t, pIn.Street, pOut.Street)
@@ -58,7 +51,7 @@ func testUpdateProperty(t *testing.T, r Repo) {
 	assert.Equal(t, pIn.Zip, pOut.Zip)
 	assertTimestampMatch(t, pIn.CreatedAt, pOut.CreatedAt)
 }
-func testListProperties(t *testing.T, r Repo) {
+func testListProperties(t *testing.T, r propertyRepo) {
 	props := make(map[string]entity.Property, 3)
 	for i := 0; i < 3; i++ {
 		// create entity
@@ -89,7 +82,7 @@ func testListProperties(t *testing.T, r Repo) {
 	// properties are deleted as they are found so there should be none left
 	assert.Len(t, props, 0)
 }
-func testRemoveProperty(t *testing.T, r Repo) {
+func testRemoveProperty(t *testing.T, r propertyRepo) {
 	// create and store property
 	p := newPropertyFixture(r)
 	require.NoError(t, r.StoreProperty(ctx, p))
@@ -97,27 +90,21 @@ func testRemoveProperty(t *testing.T, r Repo) {
 	err := r.DeleteProperty(ctx, p.ID)
 	assert.NoError(t, err)
 	// try to retrieve property
-	_, err = r.RetrieveProperty(ctx, p.ID)
+	_, err = r.GetProperty(ctx, p.ID)
 	assert.Error(t, err)
 }
-func testGetProperty(t *testing.T, r Repo) {
+func testGetProperty(t *testing.T, r propertyRepo) {
 	id := "id-does-not-exist"
-	pOut, err := r.RetrieveProperty(ctx, id)
+	pOut, err := r.GetProperty(ctx, id)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, internal.ErrEntityNotFound)
 	assert.Empty(t, pOut)
 }
 
-// helper functions
-var streetNum = 100
-
-func newPropertyFixture(r Repo) entity.Property {
-	streetNum++
-	street := fmt.Sprintf("%v N Main st.", streetNum)
-	return r.NewProperty(street, "Dallas", "TX", "75401")
+func newPropertyFixture(r propertyRepo) entity.Property {
+	p := fake.Property()
+	return r.NewProperty(p.Street, p.City, p.StateCode, p.Zip)
 }
-
-// custom assertions
 func assertTimestampMatch(t *testing.T, t1, t2 time.Time) {
 	t.Helper()
 

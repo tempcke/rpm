@@ -33,7 +33,7 @@ type grpcDriver struct {
 	client   pb.RPMClient
 }
 
-func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (specifications.ID, error) {
+func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (entity.ID, error) {
 	client, err := d.getClient()
 	if err != nil {
 		return "", err
@@ -51,7 +51,7 @@ func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (spec
 	}
 	return res.PropertyID, nil
 }
-func (d *grpcDriver) GetProperty(ctx context.Context, id specifications.ID) (*entity.Property, error) {
+func (d *grpcDriver) GetProperty(ctx context.Context, id entity.ID) (*entity.Property, error) {
 	client, err := d.getClient()
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (d *grpcDriver) ListProperties(ctx context.Context) ([]entity.Property, err
 	}
 	return properties, nil
 }
-func (d *grpcDriver) RemoveProperty(ctx context.Context, id specifications.ID) error {
+func (d *grpcDriver) RemoveProperty(ctx context.Context, id entity.ID) error {
 	client, err := d.getClient()
 	if err != nil {
 		return err

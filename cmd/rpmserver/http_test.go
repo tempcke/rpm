@@ -33,7 +33,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	type (
-		specTest func(*testing.T, specifications.Driver)
+		specTest func(*testing.T, specifications.PropertyDriver)
 	)
 	var tests = map[string]struct{ specTest }{
 		"StoreProperty":  {specifications.AddRental},

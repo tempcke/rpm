@@ -26,12 +26,9 @@ func NewPostgresRepo(db *sql.DB) Postgres {
 	}
 }
 
-// NewProperty constructs a property
 func (r Postgres) NewProperty(street, city, state, zip string) entity.Property {
 	return entity.NewProperty(street, city, state, zip)
 }
-
-// StoreProperty persists a property
 func (r Postgres) StoreProperty(ctx context.Context, property entity.Property) error {
 	query := `
 		INSERT INTO properties (
@@ -62,9 +59,7 @@ func (r Postgres) StoreProperty(ctx context.Context, property entity.Property) e
 	}
 	return nil
 }
-
-// RetrieveProperty by id
-func (r Postgres) RetrieveProperty(ctx context.Context, id string) (entity.Property, error) {
+func (r Postgres) GetProperty(ctx context.Context, id string) (entity.Property, error) {
 	p := entity.Property{}
 
 	query := `
@@ -87,8 +82,6 @@ func (r Postgres) RetrieveProperty(ctx context.Context, id string) (entity.Prope
 
 	return p, nil
 }
-
-// PropertyList is used to list properties
 func (r Postgres) PropertyList(ctx context.Context) ([]entity.Property, error) {
 	propList := make([]entity.Property, 0)
 
@@ -121,8 +114,6 @@ func (r Postgres) PropertyList(ctx context.Context) ([]entity.Property, error) {
 
 	return propList, nil
 }
-
-// DeleteProperty by id
 func (r Postgres) DeleteProperty(ctx context.Context, id string) error {
 	query := "DELETE FROM properties WHERE id = $1"
 	stmt, err := r.db.PrepareContext(ctx, query)

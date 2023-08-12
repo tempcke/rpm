@@ -15,7 +15,7 @@ import (
 // before running this else it won't test the latest copy of the code
 // use rpc/server_test to debug.
 // the main difference is that this tests the server as built by main()
-func TestGRPC(t *testing.T) {
+func TestGRPC_property(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -23,7 +23,7 @@ func TestGRPC(t *testing.T) {
 		Addr: "localhost:" + conf.GetString(config.GrpcPort),
 	}
 	type (
-		specTest func(*testing.T, specifications.Driver)
+		specTest func(*testing.T, specifications.PropertyDriver)
 	)
 	var tests = map[string]struct{ specTest }{
 		"StoreProperty":  {specifications.AddRental},

@@ -27,7 +27,7 @@ var ctx = context.Background()
 func TestRPC_StoreProperty(t *testing.T) {
 	var (
 		repo      = repository.NewInMemoryRepo()
-		server    = rpc.NewServer(actions.NewActions(repo))
+		server    = rpc.NewServer(actions.NewActionsWithRepo(repo))
 		rpmClient = newClient(t, server)
 		p1        = fake.Property()
 	)

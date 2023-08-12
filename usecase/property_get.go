@@ -25,7 +25,7 @@ func (uc GetProperty) Execute(ctx context.Context, id string) (entity.Property, 
 	if err := uc.Validate(); err != nil {
 		return noProperty, err
 	}
-	p, err := uc.propRepo.RetrieveProperty(ctx, id)
+	p, err := uc.propRepo.GetProperty(ctx, id)
 	if err != nil {
 		if errors.Is(err, internal.ErrEntityNotFound) {
 			return p, err

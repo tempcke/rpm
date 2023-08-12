@@ -19,8 +19,8 @@ func NewStoreProperty(repo PropertyWriter) StoreProperty {
 
 // Execute the use case
 func (uc StoreProperty) Execute(ctx context.Context, property entity.Property) error {
-	if err := uc.Validate(); err != nil {
-		return err
+	if uc.propRepo == nil {
+		return internal.NewErrors(internal.ErrInternal, ErrRepoNotSet)
 	}
 	if err := property.Validate(); err != nil {
 		return err
@@ -28,14 +28,6 @@ func (uc StoreProperty) Execute(ctx context.Context, property entity.Property) e
 	if err := uc.propRepo.StoreProperty(ctx, property); err != nil {
 		// TODO: make sure the error is logged here or in the repo layer
 		return internal.NewErrors(internal.ErrInternal, ErrRepo)
-	}
-	return nil
-}
-
-// Validate checks the state of this use case, such as if it has a usable repo or not
-func (uc StoreProperty) Validate() error {
-	if uc.propRepo == nil {
-		return internal.NewErrors(internal.ErrInternal, ErrRepoNotSet)
 	}
 	return nil
 }

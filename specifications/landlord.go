@@ -12,25 +12,22 @@ import (
 
 var ctx = context.Background()
 
-type ID = string
-
 type Driver interface {
-	StoreProperty(context.Context, entity.Property) (ID, error)
-	GetProperty(context.Context, ID) (*entity.Property, error)
+	PropertyDriver
+}
+type PropertyDriver interface {
+	StoreProperty(context.Context, entity.Property) (entity.ID, error)
+	GetProperty(context.Context, entity.ID) (*entity.Property, error)
 	ListProperties(context.Context) ([]entity.Property, error)
-	RemoveProperty(context.Context, ID) error
+	RemoveProperty(context.Context, entity.ID) error
+}
+type TenantDriver interface {
+	StoreTenant(context.Context, entity.Tenant) (*entity.Tenant, error)
+	GetTenant(context.Context, entity.ID) (*entity.Tenant, error)
+	ListTenants(context.Context) ([]entity.Tenant, error)
 }
 
-type specTest func(*testing.T, Driver)
-
-var LandLordSpecs = map[string]specTest{
-	"StoreProperty":  AddRental,
-	"GetProperty":    GetProperty,
-	"ListProperties": ListProperties,
-	"RemoveProperty": RemoveProperty,
-}
-
-func AddRental(t *testing.T, driver Driver) {
+func AddRental(t *testing.T, driver PropertyDriver) {
 	t.Run("without ID", func(t *testing.T) {
 		var pIn = fake.Property().WithID("")
 		id, err := driver.StoreProperty(ctx, pIn)
@@ -53,61 +50,98 @@ func AddRental(t *testing.T, driver Driver) {
 		assert.True(t, pIn.Equal(*pOut))
 	})
 }
-func GetProperty(t *testing.T, driver Driver) {
+func GetProperty(t *testing.T, driver PropertyDriver) {
 	var pIn = fake.Property()
-	addProperty(t, driver, pIn)
+	_, err := driver.StoreProperty(ctx, pIn)
+	require.NoError(t, err)
 	pOut, err := driver.GetProperty(ctx, pIn.GetID())
 	require.NoError(t, err)
 	assert.NotNil(t, pOut)
 	assert.True(t, pIn.Equal(*pOut))
 }
-func ListProperties(t *testing.T, driver Driver) {
-	var (
-		p1 = fake.Property()
-		p2 = fake.Property()
-	)
-	addProperty(t, driver, p1)
-	addProperty(t, driver, p2)
-	properties, err := driver.ListProperties(ctx)
+func ListProperties(t *testing.T, driver PropertyDriver) {
+	in1 := fake.Property()
+	in2 := fake.Property()
+	_, err := driver.StoreProperty(ctx, in1)
 	require.NoError(t, err)
-	pMap := propertyMap(properties...)
-	require.Contains(t, pMap, p1.ID)
-	require.Contains(t, pMap, p2.ID)
-	assert.True(t, p1.Equal(pMap[p1.ID]))
-	assert.True(t, p2.Equal(pMap[p2.ID]))
-}
-func RemoveProperty(t *testing.T, driver Driver) {
-	var (
-		p1 = fake.Property()
-		p2 = fake.Property()
-	)
+	_, err = driver.StoreProperty(ctx, in2)
+	require.NoError(t, err)
 
-	addProperty(t, driver, p1)
-	addProperty(t, driver, p2)
-	require.NoError(t, driver.RemoveProperty(ctx, p1.ID))
-	pOut, err := driver.GetProperty(ctx, p1.ID)
+	list, err := driver.ListProperties(ctx)
+	require.NoError(t, err)
+	m := entityMap(list...)
+	require.Contains(t, m, in1.GetID())
+	require.Contains(t, m, in2.GetID())
+}
+func RemoveProperty(t *testing.T, driver PropertyDriver) {
+	in1 := fake.Property()
+	in2 := fake.Property()
+	_, err := driver.StoreProperty(ctx, in1)
+	require.NoError(t, err)
+	_, err = driver.StoreProperty(ctx, in2)
+	require.NoError(t, err)
+
+	require.NoError(t, driver.RemoveProperty(ctx, in1.ID))
+	pOut, err := driver.GetProperty(ctx, in1.ID)
 	assert.Error(t, err)
 	assert.Nil(t, pOut)
 
-	properties, err := driver.ListProperties(ctx)
+	list, err := driver.ListProperties(ctx)
 	require.NoError(t, err)
-	pMap := propertyMap(properties...)
-	require.NotContains(t, pMap, p1.ID)
-	require.Contains(t, pMap, p2.ID)
+	m := entityMap(list...)
+	require.NotContains(t, m, in1.GetID())
+	require.Contains(t, m, in2.GetID())
 }
 
-func addProperty(t testing.TB, driver Driver, p entity.Property) {
-	t.Helper()
-	id, err := driver.StoreProperty(ctx, p)
-	require.NoError(t, err)
-	if p.ID != "" {
-		assert.Equal(t, p.ID, id)
-	}
+func AddTenant(t *testing.T, driver TenantDriver) {
+	t.Run("without ID", func(t *testing.T) {
+		var in = fake.Tenant().WithID("")
+		require.Equal(t, "", in.ID)
+		out, err := driver.StoreTenant(ctx, in)
+		require.NotNil(t, out)
+		require.NoError(t, err)
+		require.NotEqual(t, in.ID, out.ID, "expected ID to be assigned")
+		assert.True(t, in.Equal(*out))
+	})
+	t.Run("with ID", func(t *testing.T) {
+		var in = fake.Tenant()
+		require.NotEqual(t, "", in.ID)
+		out, err := driver.StoreTenant(ctx, in)
+		require.NotNil(t, out)
+		require.NoError(t, err)
+		require.Equal(t, in.ID, out.ID, "should have used provided ID")
+		assert.True(t, in.Equal(*out))
+	})
 }
-func propertyMap(properties ...entity.Property) map[ID]entity.Property {
-	var pMap = make(map[ID]entity.Property)
-	for _, p := range properties {
-		pMap[p.ID] = p
+func GetTenant(t *testing.T, driver TenantDriver) {
+	in := fake.Tenant()
+	_, err := driver.StoreTenant(ctx, in)
+	require.NoError(t, err)
+
+	out, err := driver.GetTenant(ctx, in.GetID())
+	require.NoError(t, err)
+	require.NotNil(t, out)
+	assert.True(t, out.Equal(in))
+}
+func ListTenants(t *testing.T, driver TenantDriver) {
+	in1 := fake.Tenant()
+	in2 := fake.Tenant()
+	_, err := driver.StoreTenant(ctx, in1)
+	require.NoError(t, err)
+	_, err = driver.StoreTenant(ctx, in2)
+	require.NoError(t, err)
+
+	list, err := driver.ListTenants(ctx)
+	require.NoError(t, err)
+	m := entityMap(list...)
+	require.Contains(t, m, in1.GetID())
+	require.Contains(t, m, in2.GetID())
+}
+
+func entityMap[T entity.Entity](entities ...T) map[entity.ID]entity.Entity {
+	var m = make(map[entity.ID]entity.Entity)
+	for _, e := range entities {
+		m[e.GetID()] = e
 	}
-	return pMap
+	return m
 }
