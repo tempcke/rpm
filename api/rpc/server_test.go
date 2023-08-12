@@ -24,21 +24,17 @@ import (
 
 var ctx = context.Background()
 
-func TestRPC_StoreProperty(t *testing.T) {
+func TestRPC_Property(t *testing.T) {
 	var (
 		repo      = repository.NewInMemoryRepo()
-		server    = rpc.NewServer(actions.NewActions(repo))
+		server    = rpc.NewServer(actions.NewActionsWithRepo(repo))
 		rpmClient = newClient(t, server)
 		p1        = fake.Property()
 	)
 
 	// StoreProperty
 	storeReq := pb.StorePropertyReq{
-		PropertyID: p1.ID,
-		Street:     p1.Street,
-		City:       p1.City,
-		State:      p1.StateCode,
-		Zip:        p1.Zip,
+		Property: pb.ToProperty(p1),
 	}
 	storeRes, err := rpmClient.StoreProperty(ctx, &storeReq)
 	require.NoError(t, err)
@@ -51,7 +47,7 @@ func TestRPC_StoreProperty(t *testing.T) {
 	assertPropertyMatch(t, p1, getRes.Property)
 
 	// ListProperties
-	stream, err := rpmClient.ListProperties(ctx, &pb.PropertyFilter{})
+	stream, err := rpmClient.ListProperties(ctx, &pb.ListPropertiesReq{})
 	require.NoError(t, err)
 	var properties = make(map[string]*pb.Property, 0)
 	for {
@@ -79,6 +75,67 @@ func TestRPC_StoreProperty(t *testing.T) {
 	// t.Log(s.String())      // rpc error: code = NotFound desc = entity not found: property[some-id]
 	// t.Log(s.Message())     // entity not found: property[some-id]
 	// t.Log(s.Err().Error()) // rpc error: code = NotFound desc = entity not found: property[some-id]
+}
+
+func TestRPC_Tenant(t *testing.T) {
+	var (
+		repo      = repository.NewInMemoryRepo()
+		server    = rpc.NewServer(actions.NewActionsWithRepo(repo))
+		rpmClient = newClient(t, server)
+	)
+
+	t.Run("success", func(t *testing.T) {
+		// store in1
+		in1 := fake.Tenant()
+		storeReq := pb.StoreTenantReq{
+			Tenant: pb.ToTenant(in1),
+		}
+		storeRes, err := rpmClient.StoreTenant(ctx, &storeReq)
+		require.NoError(t, err)
+		require.NotNil(t, storeRes)
+		require.Equal(t, in1.ID, storeRes.TenantID)
+
+		// get
+		getReq := pb.GetTenantReq{TenantID: in1.GetID()}
+		getRes, err := rpmClient.GetTenant(ctx, &getReq)
+		require.NoError(t, err)
+		require.NotNil(t, getRes)
+		out := getRes.GetTenant().ToTenant()
+		require.True(t, out.Equal(in1))
+
+		// store in2
+		in2 := fake.Tenant()
+		_, err = rpmClient.StoreTenant(ctx,
+			&pb.StoreTenantReq{Tenant: pb.ToTenant(in2)})
+		require.NoError(t, err)
+
+		// list, expect in1, in2
+		listReq := pb.ListTenantsReq{}
+		stream, err := rpmClient.ListTenants(ctx, &listReq)
+		require.NoError(t, err)
+		var list = make(map[entity.ID]entity.Tenant)
+		for {
+			pbTenant, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			require.NoError(t, err)
+			list[pbTenant.GetTenantID()] = pbTenant.ToTenant()
+		}
+		require.Len(t, list, 2)
+		require.True(t, in1.Equal(list[in1.GetID()]))
+		require.True(t, in2.Equal(list[in2.GetID()]))
+	})
+
+	t.Run("get tenant not found", func(t *testing.T) {
+		getReq := pb.GetTenantReq{TenantID: entity.NewID()}
+		getRes, err := rpmClient.GetTenant(ctx, &getReq)
+		require.Nil(t, getRes)
+		require.Error(t, err)
+		s, ok := status.FromError(err)
+		require.True(t, ok, "err was not a grpc status")
+		assert.Equal(t, codes.NotFound.String(), s.Code().String(), err)
+	})
 }
 
 func assertPropertyMatch(t *testing.T, expect entity.Property, actual *pb.Property) {

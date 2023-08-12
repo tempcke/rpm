@@ -33,17 +33,13 @@ type grpcDriver struct {
 	client   pb.RPMClient
 }
 
-func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (specifications.ID, error) {
+func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (entity.ID, error) {
 	client, err := d.getClient()
 	if err != nil {
 		return "", err
 	}
 	req := pb.StorePropertyReq{
-		PropertyID: p.ID,
-		Street:     p.Street,
-		City:       p.City,
-		State:      p.StateCode,
-		Zip:        p.Zip,
+		Property: pb.ToProperty(p),
 	}
 	res, err := client.StoreProperty(ctx, &req)
 	if err != nil {
@@ -51,7 +47,7 @@ func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (spec
 	}
 	return res.PropertyID, nil
 }
-func (d *grpcDriver) GetProperty(ctx context.Context, id specifications.ID) (*entity.Property, error) {
+func (d *grpcDriver) GetProperty(ctx context.Context, id entity.ID) (*entity.Property, error) {
 	client, err := d.getClient()
 	if err != nil {
 		return nil, err
@@ -75,8 +71,7 @@ func (d *grpcDriver) ListProperties(ctx context.Context) ([]entity.Property, err
 	if err != nil {
 		return nil, err
 	}
-	filter := pb.PropertyFilter{}
-	stream, err := client.ListProperties(ctx, &filter)
+	stream, err := client.ListProperties(ctx, &pb.ListPropertiesReq{})
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +95,7 @@ func (d *grpcDriver) ListProperties(ctx context.Context) ([]entity.Property, err
 	}
 	return properties, nil
 }
-func (d *grpcDriver) RemoveProperty(ctx context.Context, id specifications.ID) error {
+func (d *grpcDriver) RemoveProperty(ctx context.Context, id entity.ID) error {
 	client, err := d.getClient()
 	if err != nil {
 		return err
@@ -110,6 +105,56 @@ func (d *grpcDriver) RemoveProperty(ctx context.Context, id specifications.ID) e
 		return err
 	}
 	return nil
+}
+
+func (d *grpcDriver) StoreTenant(ctx context.Context, tenant entity.Tenant) (*entity.Tenant, error) {
+	client, err := d.getClient()
+	if err != nil {
+		return nil, err
+	}
+	req := pb.StoreTenantReq{
+		Tenant: pb.ToTenant(tenant),
+	}
+	res, err := client.StoreTenant(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	tenant.ID = res.TenantID
+	return &tenant, nil
+}
+func (d *grpcDriver) GetTenant(ctx context.Context, id entity.ID) (*entity.Tenant, error) {
+	client, err := d.getClient()
+	if err != nil {
+		return nil, err
+	}
+	req := pb.GetTenantReq{TenantID: id}
+	res, err := client.GetTenant(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	return res.Tenant.ToTenant().Ptr(), nil
+}
+func (d *grpcDriver) ListTenants(ctx context.Context) ([]entity.Tenant, error) {
+	client, err := d.getClient()
+	if err != nil {
+		return nil, err
+	}
+	stream, err := client.ListTenants(ctx, &pb.ListTenantsReq{})
+	if err != nil {
+		return nil, err
+	}
+	var tenants []entity.Tenant
+	for {
+		pbTenant, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+		tenants = append(tenants, pbTenant.ToTenant())
+	}
+	return tenants, nil
 }
 
 func (d *grpcDriver) getClient() (pb.RPMClient, error) {

@@ -25,7 +25,10 @@ type RPMClient interface {
 	StoreProperty(ctx context.Context, in *StorePropertyReq, opts ...grpc.CallOption) (*StorePropertyRes, error)
 	GetProperty(ctx context.Context, in *GetPropertyReq, opts ...grpc.CallOption) (*GetPropertyRes, error)
 	RemoveProperty(ctx context.Context, in *RemovePropertyReq, opts ...grpc.CallOption) (*RemovePropertyRes, error)
-	ListProperties(ctx context.Context, in *PropertyFilter, opts ...grpc.CallOption) (RPM_ListPropertiesClient, error)
+	ListProperties(ctx context.Context, in *ListPropertiesReq, opts ...grpc.CallOption) (RPM_ListPropertiesClient, error)
+	StoreTenant(ctx context.Context, in *StoreTenantReq, opts ...grpc.CallOption) (*StoreTenantRes, error)
+	GetTenant(ctx context.Context, in *GetTenantReq, opts ...grpc.CallOption) (*GetTenantRes, error)
+	ListTenants(ctx context.Context, in *ListTenantsReq, opts ...grpc.CallOption) (RPM_ListTenantsClient, error)
 }
 
 type rPMClient struct {
@@ -63,7 +66,7 @@ func (c *rPMClient) RemoveProperty(ctx context.Context, in *RemovePropertyReq, o
 	return out, nil
 }
 
-func (c *rPMClient) ListProperties(ctx context.Context, in *PropertyFilter, opts ...grpc.CallOption) (RPM_ListPropertiesClient, error) {
+func (c *rPMClient) ListProperties(ctx context.Context, in *ListPropertiesReq, opts ...grpc.CallOption) (RPM_ListPropertiesClient, error) {
 	stream, err := c.cc.NewStream(ctx, &RPM_ServiceDesc.Streams[0], "/rpmpb.RPM/ListProperties", opts...)
 	if err != nil {
 		return nil, err
@@ -95,6 +98,56 @@ func (x *rPMListPropertiesClient) Recv() (*Property, error) {
 	return m, nil
 }
 
+func (c *rPMClient) StoreTenant(ctx context.Context, in *StoreTenantReq, opts ...grpc.CallOption) (*StoreTenantRes, error) {
+	out := new(StoreTenantRes)
+	err := c.cc.Invoke(ctx, "/rpmpb.RPM/StoreTenant", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rPMClient) GetTenant(ctx context.Context, in *GetTenantReq, opts ...grpc.CallOption) (*GetTenantRes, error) {
+	out := new(GetTenantRes)
+	err := c.cc.Invoke(ctx, "/rpmpb.RPM/GetTenant", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rPMClient) ListTenants(ctx context.Context, in *ListTenantsReq, opts ...grpc.CallOption) (RPM_ListTenantsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RPM_ServiceDesc.Streams[1], "/rpmpb.RPM/ListTenants", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &rPMListTenantsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type RPM_ListTenantsClient interface {
+	Recv() (*Tenant, error)
+	grpc.ClientStream
+}
+
+type rPMListTenantsClient struct {
+	grpc.ClientStream
+}
+
+func (x *rPMListTenantsClient) Recv() (*Tenant, error) {
+	m := new(Tenant)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // RPMServer is the server API for RPM service.
 // All implementations must embed UnimplementedRPMServer
 // for forward compatibility
@@ -102,7 +155,10 @@ type RPMServer interface {
 	StoreProperty(context.Context, *StorePropertyReq) (*StorePropertyRes, error)
 	GetProperty(context.Context, *GetPropertyReq) (*GetPropertyRes, error)
 	RemoveProperty(context.Context, *RemovePropertyReq) (*RemovePropertyRes, error)
-	ListProperties(*PropertyFilter, RPM_ListPropertiesServer) error
+	ListProperties(*ListPropertiesReq, RPM_ListPropertiesServer) error
+	StoreTenant(context.Context, *StoreTenantReq) (*StoreTenantRes, error)
+	GetTenant(context.Context, *GetTenantReq) (*GetTenantRes, error)
+	ListTenants(*ListTenantsReq, RPM_ListTenantsServer) error
 	mustEmbedUnimplementedRPMServer()
 }
 
@@ -119,8 +175,17 @@ func (UnimplementedRPMServer) GetProperty(context.Context, *GetPropertyReq) (*Ge
 func (UnimplementedRPMServer) RemoveProperty(context.Context, *RemovePropertyReq) (*RemovePropertyRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveProperty not implemented")
 }
-func (UnimplementedRPMServer) ListProperties(*PropertyFilter, RPM_ListPropertiesServer) error {
+func (UnimplementedRPMServer) ListProperties(*ListPropertiesReq, RPM_ListPropertiesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListProperties not implemented")
+}
+func (UnimplementedRPMServer) StoreTenant(context.Context, *StoreTenantReq) (*StoreTenantRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StoreTenant not implemented")
+}
+func (UnimplementedRPMServer) GetTenant(context.Context, *GetTenantReq) (*GetTenantRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTenant not implemented")
+}
+func (UnimplementedRPMServer) ListTenants(*ListTenantsReq, RPM_ListTenantsServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListTenants not implemented")
 }
 func (UnimplementedRPMServer) mustEmbedUnimplementedRPMServer() {}
 
@@ -190,7 +255,7 @@ func _RPM_RemoveProperty_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _RPM_ListProperties_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(PropertyFilter)
+	m := new(ListPropertiesReq)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -207,6 +272,63 @@ type rPMListPropertiesServer struct {
 }
 
 func (x *rPMListPropertiesServer) Send(m *Property) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _RPM_StoreTenant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreTenantReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RPMServer).StoreTenant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpmpb.RPM/StoreTenant",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RPMServer).StoreTenant(ctx, req.(*StoreTenantReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RPM_GetTenant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTenantReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RPMServer).GetTenant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpmpb.RPM/GetTenant",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RPMServer).GetTenant(ctx, req.(*GetTenantReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RPM_ListTenants_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListTenantsReq)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RPMServer).ListTenants(m, &rPMListTenantsServer{stream})
+}
+
+type RPM_ListTenantsServer interface {
+	Send(*Tenant) error
+	grpc.ServerStream
+}
+
+type rPMListTenantsServer struct {
+	grpc.ServerStream
+}
+
+func (x *rPMListTenantsServer) Send(m *Tenant) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -229,11 +351,24 @@ var RPM_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "RemoveProperty",
 			Handler:    _RPM_RemoveProperty_Handler,
 		},
+		{
+			MethodName: "StoreTenant",
+			Handler:    _RPM_StoreTenant_Handler,
+		},
+		{
+			MethodName: "GetTenant",
+			Handler:    _RPM_GetTenant_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "ListProperties",
 			Handler:       _RPM_ListProperties_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ListTenants",
+			Handler:       _RPM_ListTenants_Handler,
 			ServerStreams: true,
 		},
 	},

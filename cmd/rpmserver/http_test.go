@@ -23,7 +23,7 @@ var httpClient = &http.Client{
 // before running this else it won't test the latest copy of the code
 // use rest/server_test to debug.
 // the main difference is that this tests the server as built by main()
-func TestHTTP(t *testing.T) {
+func TestAcceptanceHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -33,7 +33,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	type (
-		specTest func(*testing.T, specifications.Driver)
+		specTest func(*testing.T, specifications.PropertyDriver)
 	)
 	var tests = map[string]struct{ specTest }{
 		"StoreProperty":  {specifications.AddRental},

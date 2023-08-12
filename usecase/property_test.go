@@ -25,7 +25,7 @@ func TestAddProperty(t *testing.T) {
 		p := repo.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
 
 		require.NoError(t, uc.Execute(ctx, p))
-		_, err := repo.RetrieveProperty(ctx, p.ID)
+		_, err := repo.GetProperty(ctx, p.ID)
 
 		require.NoError(t, err)
 	})
@@ -35,7 +35,7 @@ func TestAddProperty(t *testing.T) {
 		err := uc.Execute(ctx, p)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, internal.ErrEntityInvalid)
-		_, err = repo.RetrieveProperty(ctx, p.ID)
+		_, err = repo.GetProperty(ctx, p.ID)
 		require.Error(t, err)
 	})
 	t.Run("no repo", func(t *testing.T) {
@@ -45,18 +45,18 @@ func TestAddProperty(t *testing.T) {
 		require.Error(t, err)
 		assert.ErrorIs(t, err, internal.ErrInternal)
 		assert.ErrorIs(t, err, usecase.ErrRepoNotSet)
-		_, err = repo.RetrieveProperty(ctx, p.ID)
+		_, err = repo.GetProperty(ctx, p.ID)
 		require.Error(t, err)
 	})
 	t.Run("any repo error should be internal", func(t *testing.T) {
 		var (
 			p       = entity.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
 			repoErr = fmt.Errorf("any database error %s", uuid.NewString())
-			repo    = repository.NewInMemoryRepo().WithPropertyErr(p.ID, repoErr)
+			repo    = repository.NewInMemoryRepo().WithEntityErr(p.ID, repoErr)
 			uc      = usecase.NewStoreProperty(repo)
 			err     error
 		)
-		_, err = repo.RetrieveProperty(ctx, p.ID)
+		_, err = repo.GetProperty(ctx, p.ID)
 		require.Error(t, err)
 
 		err = uc.Execute(ctx, p)
@@ -145,6 +145,6 @@ func TestDelProperty(t *testing.T) {
 	})
 }
 
-func newPropertyFixture(r usecase.PropertyRepository) entity.Property {
+func newPropertyFixture(r usecase.PropertyRepo) entity.Property {
 	return r.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
 }

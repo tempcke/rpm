@@ -8,7 +8,7 @@ import (
 
 // PropertyReader allows queries regarding properties
 type PropertyReader interface {
-	RetrieveProperty(ctx context.Context, id string) (entity.Property, error)
+	GetProperty(ctx context.Context, id string) (entity.Property, error)
 	PropertyList(ctx context.Context) ([]entity.Property, error)
 }
 
@@ -19,8 +19,8 @@ type PropertyWriter interface {
 	DeleteProperty(ctx context.Context, id string) error
 }
 
-// PropertyRepository contains both the PropertyReader and PropertyWriter
-type PropertyRepository interface {
+// PropertyRepo contains both the PropertyReader and PropertyWriter
+type PropertyRepo interface {
 	PropertyReader
 	PropertyWriter
 }

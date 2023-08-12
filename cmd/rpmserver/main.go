@@ -57,7 +57,9 @@ func run(log logrus.FieldLogger) error {
 
 func restServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
 	var (
-		acts   = actions.NewActions(repo(db))
+		r    = repo(db)
+		acts = actions.NewActions().
+			WithPropertyRepo(r)
 		server = rest.NewServer(acts)
 		port   = ":" + conf.GetString(config.AppPort)
 	)
@@ -81,7 +83,9 @@ func grpcServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
 		return err
 	}
 	s := grpc.NewServer(grpcOptions(conf, log)...)
-	rpcServer := rpc.NewServer(actions.NewActions(repo(db)))
+	r := repo(db)
+	rpcServer := rpc.NewServer(actions.NewActions().
+		WithPropertyRepo(r).WithTenantRepo(r))
 	pb.RegisterRPMServer(s, rpcServer)
 
 	log.Info("Listening on " + port)

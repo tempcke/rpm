@@ -8,7 +8,7 @@ import (
 
 // Property entity
 type Property struct {
-	ID        string
+	ID        ID
 	Street    string // 1234 N Main st
 	City      string // Dallas
 	StateCode string // TX
@@ -30,7 +30,7 @@ func NewProperty(street, city, state, zip string) Property {
 
 // GetID of entity
 // method needed to implement entity.Entity
-func (p Property) GetID() string {
+func (p Property) GetID() ID {
 	return p.ID
 }
 
@@ -42,14 +42,13 @@ func (p Property) Validate() error {
 	return nil
 }
 
-func (p Property) WithID(id string) Property {
+func (p Property) WithID(id ID) Property {
 	p.ID = id
 	return p
 }
 
 func (p Property) Equal(p2 Property) bool {
-	idMatches := p.ID == "" || p2.ID == "" || p.ID == p2.ID
-	return idMatches &&
+	return idEqualOrEmpty(p.ID, p2.ID) &&
 		p.Street == p2.Street &&
 		p.City == p2.City &&
 		p.StateCode == p2.StateCode &&

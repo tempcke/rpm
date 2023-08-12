@@ -4,15 +4,33 @@ import (
 	"testing"
 
 	"github.com/tempcke/rpm/repository"
-	"github.com/tempcke/rpm/usecase"
 )
 
-var _ usecase.PropertyRepository = (*repository.InMemory)(nil)
+func TestPropertyRepo_InMemory(t *testing.T) {
+	var tests = map[string]struct {
+		fn func(*testing.T, propertyRepo)
+	}{
+		"store":  {testStoreAndRetrieveProperty},
+		"update": {testUpdateProperty},
+		"list":   {testListProperties},
+		"remove": {testRemoveProperty},
+		"get":    {testGetProperty},
+	}
 
-func TestInMemoryRepository(t *testing.T) {
 	r := repository.NewInMemoryRepo()
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			tc.fn(t, r)
+		})
+	}
+}
+func TestTenantRepo_InMemory(t *testing.T) {
+	var tests = map[string]struct{ fn func(*testing.T, tenantRepo) }{
+		"store get list": {testTenant},
+	}
 
-	for name, tc := range repoTests {
+	r := repository.NewInMemoryRepo()
+	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc.fn(t, r)
 		})

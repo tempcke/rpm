@@ -10,9 +10,8 @@ type Entity interface {
 }
 
 // ID for entities
-type ID uuid.UUID
+type ID = string
 
 // NewID returns a new ID
-func NewID() string {
-	return uuid.NewString()
-}
+func NewID() string               { return uuid.NewString() }
+func idEqualOrEmpty(a, b ID) bool { return a == "" || b == "" || a == b }

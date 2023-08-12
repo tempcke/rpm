@@ -23,6 +23,8 @@ testAll: dockerUp	## run all tests including those that need docker/postgres
 testCI:				## exact tests the way buildkite does, use for local debug of buildkite failure
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci run --rm appci /bin/sh -e -c 'bash pipeline/test.sh' || true
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
+testAcceptance: dockerRestartApp
+	godotenv time -p go test -failfast -p=1 -count=1 ./cmd/... -v -run=Acceptance -tags=withDocker | grep -v '\[no test'
 
 dockerUp: init		## docker-compose up
 	@if [ ! "$(shell docker-compose ps --services --filter "status=running" | grep postgres)" = "postgres" ]; then \
@@ -52,9 +54,8 @@ init: .env .git/hooks/pre-commit cert
 .git/hooks/pre-commit:
 	cp -r .githooks/* .git/hooks/
 
-protoc:
-	@rm -f ./api/rpc/proto/*.go
-	@rm -rf ./api/rpc/proto/api
+protoc:  ## generate api/rpc/proto/*.pb.go
+	@rm -f ./api/rpc/proto/*.pb.go
 	protoc -I=./api/rpc/proto \
 		--go_out=./api/rpc/proto --go_opt=paths=source_relative \
 		--go-grpc_out=./api/rpc/proto --go-grpc_opt=paths=source_relative \
@@ -69,4 +70,4 @@ service.key:
 	openssl x509 -req -in service.csr -CA ca.cert -CAkey ca.key -CAcreateserial \
 		-out service.pem -days 365 -sha256 -extfile certificate.conf -extensions req_ext
 
-.PHONY: help check lint test testAll testCI dockerUp dockerDown dockerRestart clean init
+.PHONY: help check lint test testAll testCI dockerUp dockerDown dockerRestart protoc clean init

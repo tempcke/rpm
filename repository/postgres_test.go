@@ -8,15 +8,34 @@ import (
 
 	"github.com/tempcke/rpm/internal/test"
 	"github.com/tempcke/rpm/repository"
-	"github.com/tempcke/rpm/usecase"
 )
 
-var _ usecase.PropertyRepository = (*repository.Postgres)(nil)
+func TestPropertyRepo_Postgres(t *testing.T) {
+	var tests = map[string]struct {
+		fn func(*testing.T, propertyRepo)
+	}{
+		"store":  {testStoreAndRetrieveProperty},
+		"update": {testUpdateProperty},
+		"list":   {testListProperties},
+		"remove": {testRemoveProperty},
+		"get":    {testGetProperty},
+	}
 
-func TestPropertyRepository(t *testing.T) {
 	r := repository.NewPostgresRepo(test.DB(t))
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			tc.fn(t, r)
+		})
+	}
+}
 
-	for name, tc := range repoTests {
+func TestTenantRepo_Postgres(t *testing.T) {
+	var tests = map[string]struct{ fn func(*testing.T, tenantRepo) }{
+		"store get list": {testTenant},
+	}
+
+	r := repository.NewPostgresRepo(test.DB(t))
+	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc.fn(t, r)
 		})

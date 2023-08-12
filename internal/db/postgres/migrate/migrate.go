@@ -10,6 +10,7 @@ import (
 
 var allFlows = []*mig.Flow{
 	&flows.Flow001Properties,
+	&flows.Flow002Tenants,
 }
 
 func Up(db *sql.DB, log logrus.FieldLogger) error {
@@ -24,5 +25,9 @@ func Up(db *sql.DB, log logrus.FieldLogger) error {
 		WithLogger(log).
 		WithFlows(allFlows...)
 
-	return m.Up()
+	if err := m.Up(); err != nil {
+		return err
+	}
+	allFlows = nil
+	return nil
 }

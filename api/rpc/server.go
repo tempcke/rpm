@@ -6,7 +6,6 @@ import (
 
 	"github.com/tempcke/rpm/actions"
 	pb "github.com/tempcke/rpm/api/rpc/proto"
-	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/config"
 	"google.golang.org/grpc/codes"
@@ -35,17 +34,11 @@ func (s Server) WithConfig(conf config.Config) *Server {
 }
 
 func (s *Server) StoreProperty(ctx context.Context, req *pb.StorePropertyReq) (*pb.StorePropertyRes, error) {
-	pIn := entity.Property{
-		ID:        req.PropertyID,
-		Street:    req.Street,
-		City:      req.City,
-		StateCode: req.State,
-		Zip:       req.Zip,
-	}
+	pIn := req.GetProperty().ToProperty()
 	id, err := s.actions.StoreProperty(ctx, pIn)
 	if err != nil {
-		// FIXME: return a proper grpc error status
-		return nil, err
+		// FIXME: determine and return correct error code
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	res := pb.StorePropertyRes{PropertyID: id}
@@ -78,7 +71,7 @@ func (s *Server) GetProperty(ctx context.Context, req *pb.GetPropertyReq) (*pb.G
 	}
 	return &res, nil
 }
-func (s *Server) ListProperties(filter *pb.PropertyFilter, stream pb.RPM_ListPropertiesServer) error {
+func (s *Server) ListProperties(filter *pb.ListPropertiesReq, stream pb.RPM_ListPropertiesServer) error {
 	var ctx = context.Background() // TODO: is there a better context to use?
 	properties, err := s.actions.ListProperties(ctx)
 	if err != nil {
@@ -96,5 +89,43 @@ func (s *Server) ListProperties(filter *pb.PropertyFilter, stream pb.RPM_ListPro
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *Server) StoreTenant(ctx context.Context, req *pb.StoreTenantReq) (*pb.StoreTenantRes, error) {
+	in := req.GetTenant().ToTenant()
+	out, err := s.actions.StoreTenant(ctx, in)
+	if err != nil {
+		// FIXME: determine and return correct error code
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+	res := pb.StoreTenantRes{TenantID: out.ID}
+	return &res, nil
+}
+func (s *Server) GetTenant(ctx context.Context, req *pb.GetTenantReq) (*pb.GetTenantRes, error) {
+	out, err := s.actions.GetTenant(ctx, req.TenantID)
+	if err != nil {
+		if errors.Is(err, internal.ErrEntityNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		// FIXME: determine and return correct error code
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+	res := pb.GetTenantRes{Tenant: pb.ToTenant(*out)}
+	return &res, nil
+}
+func (s *Server) ListTenants(filter *pb.ListTenantsReq, stream pb.RPM_ListTenantsServer) error {
+	var ctx = context.Background() // TODO: is there a better context to use?
+	list, err := s.actions.ListTenants(ctx)
+	if err != nil {
+		// FIXME: determine and return correct error code
+		return status.Error(codes.Unknown, err.Error())
+	}
+	for _, e := range list {
+		if err := stream.Send(pb.ToTenant(e)); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

@@ -10,11 +10,7 @@ message Property {
   string zip = 5;
 }
 message StorePropertyReq {
-  string propertyID = 1; // uuid generated when omitted
-  string street = 2;
-  string city = 3;
-  string state = 4;
-  string zip = 5;
+  Property property = 1; // uuid generated when omitted
 }
 message StorePropertyRes {
   string propertyID = 1;
@@ -29,11 +25,36 @@ message RemovePropertyReq {
   string propertyID = 1;
 }
 message RemovePropertyRes {}
-message PropertyFilter {}
+message ListPropertiesReq {}
+
+message Tenant {
+  string tenantID = 1;
+  string fullName = 2;
+  string dlNum = 3;
+  string dlState = 4;
+  string dob = 5; // date of birth, ex: "2006-01-02"
+}
+message StoreTenantReq {
+  Tenant tenant = 1; // uuid generated when omitted
+}
+message StoreTenantRes {
+  string tenantID = 1;
+}
+message GetTenantReq {
+  string tenantID = 1;
+}
+message GetTenantRes {
+  Tenant tenant = 1;
+}
+message ListTenantsReq {}
 
 service RPM {
   rpc StoreProperty(StorePropertyReq) returns (StorePropertyRes);
   rpc GetProperty(GetPropertyReq) returns (GetPropertyRes);
   rpc RemoveProperty(RemovePropertyReq) returns (RemovePropertyRes);
-  rpc ListProperties(PropertyFilter) returns (stream Property);
+  rpc ListProperties(ListPropertiesReq) returns (stream Property);
+
+  rpc StoreTenant(StoreTenantReq) returns (StoreTenantRes);
+  rpc GetTenant(GetTenantReq) returns (GetTenantRes);
+  rpc ListTenants(ListTenantsReq) returns (stream Tenant);
 }
