@@ -86,7 +86,7 @@ func TestRPC_Tenant(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		// store in1
-		in1 := fake.Tenant()
+		in1 := fake.Tenant().WithPhone(fake.Phone())
 		storeReq := pb.StoreTenantReq{
 			Tenant: pb.ToTenant(in1),
 		}
@@ -101,7 +101,7 @@ func TestRPC_Tenant(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, getRes)
 		out := getRes.GetTenant().ToTenant()
-		require.True(t, out.Equal(in1))
+		assertTenantMatch(t, in1, out)
 
 		// store in2
 		in2 := fake.Tenant()
@@ -148,7 +148,12 @@ func assertPropertyMatch(t *testing.T, expect entity.Property, actual *pb.Proper
 	assert.Equal(t, expect.Zip, actual.Zip)
 
 }
-
+func assertTenantMatch(t testing.TB, expect entity.Tenant, actual entity.Tenant) {
+	t.Helper()
+	if !actual.Equal(expect) {
+		t.Fatalf("tenants not equal\ngot  %+v\nwant %+v", actual, expect)
+	}
+}
 func newClient(t testing.TB, server *rpc.Server) pb.RPMClient {
 	// start server
 	const bufSize = 1024 * 1024

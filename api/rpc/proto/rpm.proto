@@ -33,6 +33,11 @@ message Tenant {
   string dlNum = 3;
   string dlState = 4;
   string dob = 5; // date of birth, ex: "2006-01-02"
+  repeated Phone phones = 6;
+}
+message Phone {
+  string number = 1;
+  string note = 2;
 }
 message StoreTenantReq {
   Tenant tenant = 1; // uuid generated when omitted

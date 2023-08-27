@@ -100,7 +100,7 @@ func AddTenant(t *testing.T, driver TenantDriver) {
 		out, err := driver.StoreTenant(ctx, in)
 		require.NoError(t, err)
 		require.NotNil(t, out)
-		require.NotEqual(t, in.ID, out.ID, "expected ID to be assigned")
+		require.NotEmpty(t, out.GetID(), "expected ID to be assigned")
 		assert.True(t, in.Equal(*out))
 	})
 	t.Run("with ID", func(t *testing.T) {

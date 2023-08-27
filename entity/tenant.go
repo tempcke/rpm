@@ -41,7 +41,30 @@ func (t Tenant) GetID() ID { return t.ID }
 func (t Tenant) Equal(t2 Tenant) bool {
 	return idEqualOrEmpty(t.ID, t2.ID) &&
 		t.FullName == t2.FullName &&
-		t.DateOfBirth.Equal(t2.DateOfBirth)
+		t.DateOfBirth.Equal(t2.DateOfBirth) &&
+		phoneListEqual(t.Phones, t2.Phones)
 }
 
 func (t Tenant) Ptr() *Tenant { return &t }
+
+func phoneListEqual(a, b []Phone) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	if len(a) == 0 {
+		return true
+	}
+	for i := range a {
+		found := false
+		for j := range b {
+			if a[i].Equal(b[j]) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}

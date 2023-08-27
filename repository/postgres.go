@@ -133,33 +133,20 @@ func (r Postgres) DeleteProperty(ctx context.Context, id string) error {
 }
 
 func (r Postgres) StoreTenant(ctx context.Context, tenant entity.Tenant) error {
-	const query = `
-		INSERT INTO tenants (id, full_name, dl_num, dl_state, dob, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (id) DO UPDATE SET full_name=$2, dl_num=$3, dl_state=$4, dob=$5, updated_at=$6`
-
-	qArgs := []any{
-		tenant.ID,
-		tenant.FullName,
-		tenant.DLNum,
-		tenant.DLState,
-		tenant.DateOfBirth,
-		r.clock.Now(),
-	}
-
-	stmt, err := r.db.PrepareContext(ctx, query)
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
-	defer func() { _ = stmt.Close() }()
+	defer func() { _ = tx.Rollback() }()
 
-	if _, err = stmt.ExecContext(ctx, qArgs...); err != nil {
+	if err := r.storeTenant(ctx, tx, tenant); err != nil {
 		return err
 	}
-
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 	return nil
 }
-
 func (r Postgres) GetTenant(ctx context.Context, id entity.ID) (*entity.Tenant, error) {
 	const query = `
 		SELECT id, full_name, dl_num, dl_state, dob
@@ -174,13 +161,15 @@ func (r Postgres) GetTenant(ctx context.Context, id entity.ID) (*entity.Tenant, 
 		}
 		return nil, err
 	}
+	phones, err := r.getTenantPhones(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	tenant.Phones = phones
 	return &tenant, nil
 }
-
 func (r Postgres) ListTenants(ctx context.Context, filter ...filters.TenantFilter) ([]entity.Tenant, error) {
-	const query = `
-		SELECT id, full_name, dl_num, dl_state, dob
-		FROM tenants`
+	const query = `SELECT id, full_name, dl_num, dl_state, dob FROM tenants;`
 	var tenants []entity.Tenant
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -204,4 +193,66 @@ func (r Postgres) ListTenants(ctx context.Context, filter ...filters.TenantFilte
 	}
 
 	return tenants, nil
+}
+func (r Postgres) storeTenant(ctx context.Context, tx *sql.Tx, tenant entity.Tenant) error {
+	const query = `
+			INSERT INTO tenants (id, full_name, dl_num, dl_state, dob, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (id) DO UPDATE SET full_name=$2, dl_num=$3, dl_state=$4, dob=$5, updated_at=$6;`
+	qArgs := []any{
+		tenant.ID,
+		tenant.FullName,
+		tenant.DLNum,
+		tenant.DLState,
+		tenant.DateOfBirth,
+		r.clock.Now(),
+	}
+	if _, err := tx.ExecContext(ctx, query, qArgs...); err != nil {
+		return err
+	}
+	return r.storeTenantPhones(ctx, tx, tenant)
+}
+func (r Postgres) storeTenantPhones(ctx context.Context, tx *sql.Tx, tenant entity.Tenant) error {
+	const (
+		delPhonesQuery = `DELETE FROM tenant_phones WHERE tenant_id=$1;`
+		insPhonesQuery = `INSERT INTO tenant_phones (tenant_id, phone_num, note) VALUES($1, $2, $3);`
+	)
+
+	var delPhonesArgs = []any{tenant.ID}
+	if _, err := tx.Exec(delPhonesQuery, delPhonesArgs...); err != nil {
+		return err
+	}
+
+	if len(tenant.Phones) > 0 {
+		stmt, err := tx.PrepareContext(ctx, insPhonesQuery)
+		if err != nil {
+			return err
+		}
+		for _, phone := range tenant.Phones {
+			qArgs := []any{tenant.GetID(), phone.Number, phone.Note}
+			if _, err := stmt.Exec(qArgs...); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+func (r Postgres) getTenantPhones(ctx context.Context, tenantID string) ([]entity.Phone, error) {
+	const query = `SELECT phone_num, note FROM tenant_phones p WHERE p.tenant_id=$1`
+	rows, err := r.db.QueryContext(ctx, query, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	var phones []entity.Phone
+	for rows.Next() {
+		var (
+			phone    entity.Phone
+			scanArgs = []any{&phone.Number, &phone.Note}
+		)
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+		phones = append(phones, phone)
+	}
+	return phones, nil
 }

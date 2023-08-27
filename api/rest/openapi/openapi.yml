@@ -1,0 +1,584 @@
+openapi: 3.0.3
+info:
+  title: Rental Property Manager (RPM)
+  description: |-
+    This project is really just a hobby project for now to play with different things.
+    
+    Some useful links:
+    - [Github repository](https://github.com/tempcke/rpm)
+    - [The source API definition](https://github.com/tempcke/rpm/blob/master/api/openapi/openapi.yaml)
+  license:
+    name: MIT License
+    url: https://github.com/tempcke/rpm/LICSENSE
+  version: 0.0.1
+externalDocs:
+  description: ReadMe docs
+  url: https://github.com/tempcke/rpm/README.md
+servers:
+  - url: https://localhost:8080
+
+paths:
+  /property:
+    post:
+      tags:
+        - property
+      summary: Add Property
+      operationId: addProperty
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewProperty'
+        required: true
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '400':
+          description: Missing or invalid fields
+          content:
+            appliaction/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+    get:
+      tags:
+        - property
+      summary: List properties
+      operationId: listProperties
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyList'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+  /property/{propertyID}:
+    put:
+      tags:
+        - property
+      summary: Store Property
+      operationId: storeProperty
+      parameters:
+        - name: propertyID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 827f4733-f3c6-43ed-ba02-974b2139825c
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewProperty'
+        required: true
+      responses:
+        '200':
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '201':
+          description: added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+    get:
+      tags:
+        - property
+      summary: Find property by ID
+      operationId: getPropertyById
+      parameters:
+        - name: propertyID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '404':
+          description: Property not found
+      security:
+        - key: []
+          secret: []
+    delete:
+      tags:
+        - property
+      summary: Deletes a property
+      operationId: deleteProperty
+      parameters:
+        - name: propertyID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Property removed or did not exist
+      security:
+        - key: []
+          secret: []
+
+  /tenant:
+    post:
+      tags:
+        - tenant
+      summary: Add Tenant
+      operationId: addTenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreTenantReq'
+        required: true
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTenantRes'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+    get:
+      tags:
+        - tenant
+      summary: List Tenants
+      operationId: listTenants
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantList'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+  /tenant/{tenantID}:
+    put:
+      tags:
+        - tenant
+      summary: Store Tenant
+      operationId: storeTenant
+      parameters:
+        - name: tenantID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 827f4733-f3c6-43ed-ba02-974b2139825c
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreTenantReq'
+        required: true
+      responses:
+        '200':
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTenantRes'
+        '201':
+          description: added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTenantRes'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+    get:
+      tags:
+        - tenant
+      summary: Get Tenant
+      operationId: getTenant
+      parameters:
+        - name: tenantID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 827f4733-f3c6-43ed-ba02-974b2139825c
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTenantRes'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+
+  /lease:
+    post:
+      tags:
+        - lease
+      summary: Lease property
+      operationId: leaseProperty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeasePropertyReq'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLeaseRes'
+        '409':
+          description: "conflict, property already leased"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+    get:
+      tags:
+        - lease
+      summary: List leases
+      operationId: listLeases
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaseList'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+  /lease/{leaseID}:
+    get:
+      tags:
+        - lease
+      summary: Get Lease
+      operationId: getLease
+      parameters:
+        - name: leaseID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 827f4733-f3c6-43ed-ba02-974b2139825d
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLeaseRes'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - key: []
+          secret: []
+
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+    Error:
+      type: object
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 1002
+        type:
+          type: string
+          example: "validation"
+        message:
+          type: string
+          example: "invalid request"
+
+    Property:
+      allOf:
+        - $ref: '#/components/schemas/NewProperty'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              example: "2e6b722b-04a9-44f8-8afc-b9327d495467"
+    NewProperty:
+      required:
+        - street
+        - city
+        - state
+        - zip
+      type: object
+      properties:
+        street:
+          type: string
+          example: "123 Main st."
+        city:
+          type: string
+          example: "Dallas"
+        state:
+          type: string
+          example: "TX"
+        zip:
+          type: string
+          example: "75401"
+    PropertyList:
+      type: object
+      required:
+        - properties
+      properties:
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/Property'
+
+    Tenant:
+      allOf:
+        - $ref: '#/components/schemas/MinTenant'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              example: "2e6b722b-04a9-44f8-8afc-b9327d495467"
+    MinTenant:
+      required:
+        - fullName
+        - dlNum
+        - dlState
+        - dob
+        - phones
+      properties:
+        fullName:
+          type: string
+          example: "John Doe"
+        dlNum:
+          type: string
+          example: "646673153"
+        dlState:
+          type: string
+          example: "TX"
+        dob:
+          type: string
+          format: date
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2006-01-02'
+        phones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+    Phone:
+      type: object
+      required:
+        - number
+        - desc
+      properties:
+        number:
+          type: string
+          pattern: '^\d{3}-\d{3}-\d{4}$'
+          example: "555-555-1234"
+        desc:
+          type: string
+          example: "mobile"
+    TenantList:
+      type: object
+      required:
+        - tenants
+      properties:
+        tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tenant'
+    StoreTenantReq:
+      type: object
+      required:
+        - tenant
+      properties:
+        tenant:
+          $ref: '#/components/schemas/MinTenant'
+    GetTenantRes:
+      type: object
+      required:
+        - tenant
+      properties:
+        tenant:
+          $ref: '#/components/schemas/Tenant'
+
+    Lease:
+      allOf:
+        - $ref: '#/components/schemas/MinLease'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              example: "2e6b722b-04a9-44f8-8afc-b9327d495468"
+    MinLease:
+      required:
+        - propertyID
+        - tenants
+        - startDate
+        - endDate
+        - currency
+        - deposit
+        - rent
+        - rentInterval
+      properties:
+        propertyID:
+          type: string
+          example: 827f4733-f3c6-43ed-ba02-974b2139825c
+        tenantIDs:
+          type: array
+          items:
+            type: string
+            example: a80432ab-b371-4396-bc5c-6c834f171c50
+        startDate:
+          type: string
+          format: date
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2006-01-02'
+        endDate:
+          type: string
+          format: date
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          example: '2006-01-02'
+        currency:
+          type: string
+          example: 'USD'
+          description: 'will default to USD when empty'
+        deposit:
+          type: integer
+          example: 2500
+        rentAmount:
+          type: integer
+          example: 2500
+        rentInterval:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+    LeasePropertyReq:
+      type: object
+      required:
+        - lease
+      properties:
+        lease:
+          $ref: '#/components/schemas/MinLease'
+    LeaseList:
+      type: object
+      required:
+        - leases
+      properties:
+        leases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lease'
+    GetLeaseRes:
+      type: object
+      required:
+        - lease
+      properties:
+        lease:
+          $ref: '#/components/schemas/Lease'
+
+  securitySchemes:
+    key:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    secret:
+      type: apiKey
+      in: header
+      name: X-API-Secret

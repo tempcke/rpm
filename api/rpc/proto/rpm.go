@@ -28,10 +28,9 @@ func (x *Tenant) ToTenant() entity.Tenant {
 	e := entity.Tenant{
 		ID:       x.GetTenantID(),
 		FullName: x.GetFullName(),
-		Phones:   nil,
 		DLNum:    x.GetDlNum(),
 		DLState:  x.GetDlState(),
-		// TODO: phones?
+		Phones:   FromPhones(x.GetPhones()),
 	}
 
 	if dob := schedule.ParseDate(x.GetDob()); dob != nil {
@@ -46,6 +45,29 @@ func ToTenant(e entity.Tenant) *Tenant {
 		DlNum:    e.DLNum,
 		DlState:  e.DLState,
 		Dob:      e.DateOfBirth.String(),
-		// TODO: phones?
+		Phones:   ToPhones(e.Phones),
+	}
+}
+func FromPhones(phones []*Phone) []entity.Phone {
+	var list []entity.Phone
+	for _, p := range phones {
+		list = append(list, entity.Phone{
+			Number: p.Number,
+			Note:   p.Note,
+		})
+	}
+	return list
+}
+func ToPhones(phones []entity.Phone) []*Phone {
+	var list []*Phone
+	for _, e := range phones {
+		list = append(list, ToPhone(e))
+	}
+	return list
+}
+func ToPhone(e entity.Phone) *Phone {
+	return &Phone{
+		Number: e.Number,
+		Note:   e.Note,
 	}
 }

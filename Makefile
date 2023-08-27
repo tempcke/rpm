@@ -14,7 +14,7 @@ check: test lint	## lint + test, pre-commit hook
 lint:				## fmt, vet, and staticcheck
 	test -z $(shell go fmt ./...)
 	go vet ./...
-	staticcheck -tags=withDocker ./...
+	staticcheck -tags=withDocker ./... | grep -v .gen.go && exit 1 || exit 0
 
 test: init			## execute tests
 	godotenv time -p go test -failfast -race -count=1 ./... -cover | grep -v '\[no test'
@@ -23,7 +23,7 @@ testAll: dockerUp	## run all tests including those that need docker/postgres
 testCI:				## exact tests the way buildkite does, use for local debug of buildkite failure
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci run --rm appci /bin/sh -e -c 'bash pipeline/test.sh' || true
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
-testAcceptance: dockerRestartApp
+testAcceptance: dockerRestartApp  ## black box testing
 	godotenv time -p go test -failfast -p=1 -count=1 ./cmd/... -v -run=Acceptance -tags=withDocker | grep -v '\[no test'
 
 dockerUp: init		## docker-compose up
@@ -53,6 +53,11 @@ init: .env .git/hooks/pre-commit cert
 
 .git/hooks/pre-commit:
 	cp -r .githooks/* .git/hooks/
+
+oapigen:  ## generate api/openapi/*.gen.go
+	oapi-codegen -generate types      -o "api/rest/openapi/types.gen.go"  -package "openapi" "api/rest/openapi/openapi.yml"
+	oapi-codegen -generate chi-server -o "api/rest/openapi/api.gen.go"    -package "openapi" "api/rest/openapi/openapi.yml"
+	# oapi-codegen -generate client     -o "api/rest/openapi/client.gen.go" -package "openapi" "api/rest/openapi/openapi.yml"
 
 protoc:  ## generate api/rpc/proto/*.pb.go
 	@rm -f ./api/rpc/proto/*.pb.go

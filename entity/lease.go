@@ -5,25 +5,35 @@ import (
 )
 
 type Lease struct {
-	ID         ID
-	Property   Property
-	Tenants    []Tenant
-	StartDate  schedule.Date
-	EndDate    schedule.Date
-	RentAmount int // dollars
-	Deposit    int // dollars
+	ID           ID
+	PropertyID   ID
+	TenantIDs    []ID
+	StartDate    schedule.Date
+	EndDate      schedule.Date
+	Deposit      int    // dollars
+	RentAmount   int    // dollars
+	Currency     string // empty will be considered USD
+	RentInterval Interval
 }
+type Interval = string
 
-func NewLease(p Property) Lease {
+const (
+	CurrencyUSD     = "USD"
+	IntervalDaily   = "daily"
+	IntervalWeekly  = "weekly"
+	IntervalMonthly = "monthly"
+)
+
+func NewLease(propertyID ID) Lease {
 	return Lease{
-		ID:       NewID(),
-		Property: p,
+		ID:         NewID(),
+		PropertyID: propertyID,
 	}
 }
-func (l Lease) WithTenant(tenants ...Tenant) Lease {
-	for _, t := range tenants {
-		if !l.HasTenant(t.ID) {
-			l.Tenants = append(l.Tenants, t)
+func (l Lease) WithTenant(tenantIDs ...ID) Lease {
+	for _, id := range tenantIDs {
+		if !l.HasTenant(id) {
+			l.TenantIDs = append(l.TenantIDs, id)
 		}
 	}
 	return l
@@ -43,8 +53,8 @@ func (l Lease) WithTerm(start, end schedule.Date) Lease {
 }
 
 func (l Lease) HasTenant(id ID) bool {
-	for _, t := range l.Tenants {
-		if t.ID == id {
+	for i := range l.TenantIDs {
+		if l.TenantIDs[i] == id {
 			return true
 		}
 	}

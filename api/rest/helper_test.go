@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/config"
@@ -108,11 +106,6 @@ func assertEqual(t *testing.T, expected, actual interface{}) {
 			expected, expected, actual, actual,
 		)
 	}
-}
-func assertTimeRecent(t testing.TB, actual time.Time) {
-	t.Helper()
-	diff := time.Since(actual).Abs().Seconds()
-	assert.Less(t, diff, 5.0)
 }
 func assertApplicationJson(t testing.TB, header http.Header) {
 	t.Helper()

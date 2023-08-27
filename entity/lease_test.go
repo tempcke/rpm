@@ -23,19 +23,19 @@ func TestLease(t *testing.T) {
 		start     = schedule.NewDate(nextMonth.Year(), nextMonth.Month(), 1)
 		end       = start.AddDate(0, 12, -1)
 	)
-	lease := entity.NewLease(property)
+	lease := entity.NewLease(property.ID)
 	require.NotEmpty(t, lease.ID)
-	require.True(t, property.Equal(lease.Property))
+	require.Equal(t, property.ID, lease.PropertyID)
 
-	lease = lease.WithTenant(tenant1, tenant2).WithTenant(tenant3)
-	require.Equal(t, 3, len(lease.Tenants))
+	lease = lease.WithTenant(tenant1.ID, tenant2.ID).WithTenant(tenant3.ID)
+	require.Equal(t, 3, len(lease.TenantIDs))
 	require.True(t, lease.HasTenant(tenant1.ID))
 	require.True(t, lease.HasTenant(tenant2.ID))
 	require.True(t, lease.HasTenant(tenant3.ID))
 
 	// don't add duplicate tenants
-	lease = lease.WithTenant(tenant2)
-	require.Equal(t, 3, len(lease.Tenants))
+	lease = lease.WithTenant(tenant2.ID)
+	require.Equal(t, 3, len(lease.TenantIDs))
 
 	lease = lease.WithRent(rent).WithDeposit(deposit)
 	assert.Equal(t, rent, lease.RentAmount)

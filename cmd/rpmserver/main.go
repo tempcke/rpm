@@ -45,7 +45,7 @@ func run(log logrus.FieldLogger) error {
 	//  return to main and the program exits.  we must find a way
 	//  to gracefully shut down the other
 	go func() {
-		c <- restServer(conf, db, log)
+		c <- openapiServer(conf, db, log)
 	}()
 
 	go func() {
@@ -55,21 +55,22 @@ func run(log logrus.FieldLogger) error {
 	return <-c
 }
 
-func restServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
+func openapiServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
 	var (
 		r    = repo(db)
 		acts = actions.NewActions().
-			WithPropertyRepo(r)
-		server = rest.NewServer(acts)
-		port   = ":" + conf.GetString(config.AppPort)
+			WithPropertyRepo(r).WithTenantRepo(r)
+		port = ":" + conf.GetString(config.AppPort)
 	)
 	if port == ":" {
 		return errors.New(config.AppPort + " not configured")
 	}
 
+	server := rest.NewServer(acts).WithConfig(conf)
+
 	log.Info("Listening on " + port)
 	fmt.Println("Listening on " + port)
-	return http.ListenAndServe(port, server)
+	return http.ListenAndServe(port, server.Handler())
 }
 func grpcServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
 	var (
