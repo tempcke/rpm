@@ -73,6 +73,28 @@ func ListProperties(t *testing.T, driver PropertyDriver) {
 	require.Contains(t, m, in1.GetID())
 	require.Contains(t, m, in2.GetID())
 }
+
+//	func FindProperty(t *testing.T, driver PropertyDriver) {
+//		var (
+//			street = "Main st"
+//			city1  = "City1"
+//			city2  = "City2"
+//			state1 = "OH"
+//			zip1   = "10001"
+//			zip2   = "10002"
+//			zip3   = "10003"
+//			p1     = entity.NewProperty("100 "+street, city1, state1, zip1)
+//			p2     = entity.NewProperty("101 "+street, city1, state1, zip2)
+//			p3     = entity.NewProperty("102 "+street, city2, state1, zip3)
+//		)
+//		for _, p := range []entity.Property{p1, p2, p3} {
+//			_, err := driver.StoreProperty(ctx, p)
+//			require.NoError(t, err, "failed to store property: "+p.String())
+//		}
+//		t.Run("by state", func(t *testing.T) {
+//
+//		})
+//	}
 func RemoveProperty(t *testing.T, driver PropertyDriver) {
 	in1 := fake.Property()
 	in2 := fake.Property()

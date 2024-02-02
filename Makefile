@@ -19,12 +19,12 @@ lint:				## fmt, vet, and staticcheck
 test: init			## execute tests
 	godotenv time -p go test -failfast -race -count=1 ./... -cover | grep -v '\[no test'
 testAll: dockerUp	## run all tests including those that need docker/postgres
-	godotenv time -p go test -failfast -p=1 -count=1 ./... -tags=withDocker -cover | grep -v '\[no test'
+	godotenv time -p go test -failfast -count=1 ./... -tags=withDocker -cover | grep -v '\[no test'
 testCI:				## exact tests the way buildkite does, use for local debug of buildkite failure
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci run --rm appci /bin/sh -e -c 'bash pipeline/test.sh' || true
 	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
 testAcceptance: dockerRestartApp  ## black box testing
-	godotenv time -p go test -failfast -p=1 -count=1 ./cmd/... -v -run=Acceptance -tags=withDocker | grep -v '\[no test'
+	godotenv time -p go test -failfast -count=1 ./cmd/... -v -run=Acceptance -tags=withDocker | grep -v '\[no test'
 
 dockerUp: init		## docker-compose up
 	@if [ ! "$(shell docker-compose ps --services --filter "status=running" | grep postgres)" = "postgres" ]; then \

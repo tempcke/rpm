@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/tempcke/rpm/internal"
@@ -53,4 +54,9 @@ func (p Property) Equal(p2 Property) bool {
 		p.City == p2.City &&
 		p.StateCode == p2.StateCode &&
 		p.Zip == p2.Zip
+}
+
+func (p Property) String() string {
+	return fmt.Sprintf("%s, %s, %s %s",
+		p.Street, p.City, p.StateCode, p.Zip)
 }
