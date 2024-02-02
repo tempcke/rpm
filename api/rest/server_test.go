@@ -15,7 +15,7 @@ import (
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/entity/fake"
 	"github.com/tempcke/rpm/internal"
-	"github.com/tempcke/rpm/repository"
+	"github.com/tempcke/rpm/internal/repository"
 )
 
 var ctx = context.Background()
@@ -380,7 +380,7 @@ func TestOAPI_Tenant(t *testing.T) {
 		s       = newServer(t).Handler()
 		headers map[string]string
 	)
-	// FIXME: add phones to post and put requests and assertions
+
 	t.Run("post", func(t *testing.T) {
 		t.Run("201 create with generated id", func(t *testing.T) {
 			var (

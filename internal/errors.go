@@ -7,17 +7,18 @@ import (
 )
 
 var (
-	ErrInternal       = errors.New("internal error")
-	ErrEntityInvalid  = errors.New("entity state invalid")
-	ErrEntityNotFound = errors.New("entity not found")
+	ErrNotImplemented = knownErr("not implemented")
+	ErrBadRequest     = knownErr("bad request")
+	ErrInternal       = knownErr("internal error")
+	ErrEntityInvalid  = knownErr("entity state invalid")
+	ErrEntityNotFound = knownErr("entity not found")
 )
+
+type Errors []error
 
 func MakeErr(errType error, msg string) error {
 	return fmt.Errorf("%w: %s", errType, msg)
 }
-
-type Errors []error
-
 func NewErrors(errorList ...error) Errors {
 	return append(Errors{}, errorList...)
 }
@@ -40,4 +41,20 @@ func (e Errors) Is(target error) bool {
 		}
 	}
 	return false
+}
+func (e Errors) ErrorOrNil() error {
+	if len(e) > 0 {
+		return e
+	}
+	return nil
+}
+
+type knownErr string
+
+func IsKnownErr(err error) bool {
+	var kErr knownErr
+	return errors.As(err, &kErr)
+}
+func (e knownErr) Error() string {
+	return string(e)
 }

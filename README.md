@@ -4,17 +4,14 @@
 
 # Rental Property Manager (RPM)
 
-[OpenAPI docs](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/tempcke/rpm/master/api/rest/openapi.yaml)
+[OpenAPI docs](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/tempcke/rpm/master/api/rest/openapi/openapi.yml)
 
 run `make help` for a list of commands
 running the tests requires some initialization which `make test` will do for you.
 
-## Implemented Features
-- Store Property
-- List Properties
-- Get Property Details
-- Delete Property
-- gRPC and REST API
+## Implemented Features both REST and gRPC
+- **Property**: Store, Get, Lst, Remove
+- **Tenant**:   Store, Get, List
 
 ## Roadmap
 - List Properties

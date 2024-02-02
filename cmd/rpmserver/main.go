@@ -18,7 +18,7 @@ import (
 	"github.com/tempcke/rpm/internal/config"
 	"github.com/tempcke/rpm/internal/db/postgres"
 	"github.com/tempcke/rpm/internal/lib/log"
-	"github.com/tempcke/rpm/repository"
+	"github.com/tempcke/rpm/internal/repository"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

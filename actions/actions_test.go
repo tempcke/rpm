@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/tempcke/rpm/actions"
-	"github.com/tempcke/rpm/repository"
+	"github.com/tempcke/rpm/internal/repository"
 	"github.com/tempcke/rpm/specifications"
 )
 

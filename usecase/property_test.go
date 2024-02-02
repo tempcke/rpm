@@ -11,7 +11,7 @@ import (
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/entity/fake"
 	"github.com/tempcke/rpm/internal"
-	"github.com/tempcke/rpm/repository"
+	"github.com/tempcke/rpm/internal/repository"
 	"github.com/tempcke/rpm/usecase"
 )
 

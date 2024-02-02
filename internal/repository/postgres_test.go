@@ -1,12 +1,16 @@
+//go:build withDocker
+// +build withDocker
+
 package repository_test
 
 import (
 	"testing"
 
-	"github.com/tempcke/rpm/repository"
+	"github.com/tempcke/rpm/internal/repository"
+	"github.com/tempcke/rpm/internal/test"
 )
 
-func TestPropertyRepo_InMemory(t *testing.T) {
+func TestPropertyRepo_Postgres(t *testing.T) {
 	var tests = map[string]struct {
 		fn func(*testing.T, propertyRepo)
 	}{
@@ -17,19 +21,20 @@ func TestPropertyRepo_InMemory(t *testing.T) {
 		"get":    {testGetProperty},
 	}
 
-	r := repository.NewInMemoryRepo()
+	r := repository.NewPostgresRepo(test.DB(t))
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc.fn(t, r)
 		})
 	}
 }
-func TestTenantRepo_InMemory(t *testing.T) {
+
+func TestTenantRepo_Postgres(t *testing.T) {
 	var tests = map[string]struct{ fn func(*testing.T, tenantRepo) }{
 		"store get list": {testTenant},
 	}
 
-	r := repository.NewInMemoryRepo()
+	r := repository.NewPostgresRepo(test.DB(t))
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			tc.fn(t, r)

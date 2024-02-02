@@ -11,21 +11,9 @@ func init() {
 
 // RandString produces a random string of lower case letters [a-z]
 func RandString(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyz"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+	var runes = make([]rune, n)
+	for i := 0; i < n; i++ {
+		runes[i] = 'a' + rand.Int31n(26)
 	}
-	return string(b)
-}
-
-// RandomString produces a random string of lower case letters [a-z]
-func RandomString(length int) string {
-	rand.Seed(time.Now().UnixNano())
-	b := make([]byte, length)
-	rand.Read(b)
-	for i := range b {
-		b[i] = byte('a' + int32(b[i])%26)
-	}
-	return string(b)
+	return string(runes)
 }

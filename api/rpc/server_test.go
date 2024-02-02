@@ -14,7 +14,7 @@ import (
 	pb "github.com/tempcke/rpm/api/rpc/proto"
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/entity/fake"
-	"github.com/tempcke/rpm/repository"
+	"github.com/tempcke/rpm/internal/repository"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"

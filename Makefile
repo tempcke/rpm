@@ -54,7 +54,7 @@ init: .env .git/hooks/pre-commit cert
 .git/hooks/pre-commit:
 	cp -r .githooks/* .git/hooks/
 
-oapigen:  ## generate api/openapi/*.gen.go
+oapigen:  ## generate api/openapi/*.gen.go using github.com/deepmap/oapi-codegen
 	oapi-codegen -generate types      -o "api/rest/openapi/types.gen.go"  -package "openapi" "api/rest/openapi/openapi.yml"
 	oapi-codegen -generate chi-server -o "api/rest/openapi/api.gen.go"    -package "openapi" "api/rest/openapi/openapi.yml"
 	# oapi-codegen -generate client     -o "api/rest/openapi/client.gen.go" -package "openapi" "api/rest/openapi/openapi.yml"
