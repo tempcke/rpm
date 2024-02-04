@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/filters"
+	"github.com/tempcke/rpm/usecase"
 )
 
 var rwMutex sync.RWMutex
@@ -48,16 +50,24 @@ func (r InMemory) GetProperty(_ context.Context, id string) (entity.Property, er
 	}
 	return e.(entity.Property), nil
 }
-func (r InMemory) PropertyList(_ context.Context) ([]entity.Property, error) {
+func (r InMemory) PropertyList(_ context.Context, f usecase.PropertyFilter) ([]entity.Property, error) {
 	for _, err := range r.entityErrs {
 		return nil, err
 	}
-	list := make([]entity.Property, 0, len(r.entities))
+	all := make([]entity.Property, 0, len(r.entities))
 	for _, e := range r.entities {
 		if p, ok := e.(entity.Property); ok {
 			if _, err := r.getEntity(e.GetID()); err != nil {
 				return nil, err
 			}
+			all = append(all, p)
+		}
+	}
+	var list []entity.Property
+	for _, p := range all {
+		// WARNING: this is not identical behavior to the postgres repo
+		// but it is good enough for in memory tests
+		if strings.Contains(p.String(), f.Search) {
 			list = append(list, p)
 		}
 	}

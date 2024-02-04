@@ -4,16 +4,14 @@
 package main_test
 
 import (
-	"context"
 	"fmt"
-	"io"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/require"
+	"github.com/tempcke/rpm/api/rpc"
 	pb "github.com/tempcke/rpm/api/rpc/proto"
-	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/config"
 	"github.com/tempcke/rpm/specifications"
@@ -27,186 +25,27 @@ import (
 // before running this else it won't test the latest copy of the code
 // use rpc/server_test to debug.
 // the main difference is that this tests the server as built by main()
-func TestAcceptanceGRPC_property(t *testing.T) {
+func TestAcceptanceGRPC_specifications(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
-	var tests = map[string]struct {
-		specTest func(*testing.T, specifications.PropertyDriver)
-	}{
-		"StoreProperty":  {specifications.AddRental},
-		"GetProperty":    {specifications.GetProperty},
-		"ListProperties": {specifications.ListProperties},
-		"RemoveProperty": {specifications.RemoveProperty},
-	}
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			tc.specTest(t, grpcClient())
-		})
-	}
+	driver := rpcDriver(t)
+	specifications.RunAllTests(t, driver, driver)
 }
-func TestAcceptanceGRPC_Tenant(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
-	var tests = map[string]struct {
-		specTest func(*testing.T, specifications.TenantDriver)
-	}{
-		"StoreTenant": {specifications.AddTenant},
-		"GetTenant":   {specifications.GetTenant},
-		"ListTenants": {specifications.ListTenants},
-	}
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			tc.specTest(t, grpcClient())
-		})
-	}
-}
-func grpcClient() *grpcDriver {
-	return &grpcDriver{
-		Addr: "localhost:" + conf.GetString(config.GrpcPort),
-	}
-}
-
-var _ specifications.Driver = (*grpcDriver)(nil)
-
-// grpcDriver is used to run specifications tests against a stood up server
-// however in doing so the code also becomes a client wrapper with an identical interface
-// to the httpDriver
-type grpcDriver struct {
-	Addr     string
-	connOnce sync.Once
-	conn     *grpc.ClientConn
-	connErr  error
-	client   pb.RPMClient
-}
-
-func (d *grpcDriver) StoreProperty(ctx context.Context, p entity.Property) (entity.ID, error) {
-	client, err := d.getClient()
-	if err != nil {
-		return "", err
-	}
-	req := pb.StorePropertyReq{
-		Property: pb.ToProperty(p),
-	}
-	res, err := client.StoreProperty(ctx, &req)
-	if err != nil {
-		return "", err
-	}
-	return res.PropertyID, nil
-}
-func (d *grpcDriver) GetProperty(ctx context.Context, id entity.ID) (*entity.Property, error) {
-	client, err := d.getClient()
-	if err != nil {
-		return nil, err
-	}
-	req := pb.GetPropertyReq{PropertyID: id}
-	res, err := client.GetProperty(ctx, &req)
-	if err != nil {
-		return nil, err
-	}
-	p := entity.Property{
-		ID:        res.Property.GetPropertyID(),
-		Street:    res.Property.GetStreet(),
-		City:      res.Property.GetCity(),
-		StateCode: res.Property.GetState(),
-		Zip:       res.Property.GetZip(),
-	}
-	return &p, nil
-}
-func (d *grpcDriver) ListProperties(ctx context.Context) ([]entity.Property, error) {
-	client, err := d.getClient()
-	if err != nil {
-		return nil, err
-	}
-	stream, err := client.ListProperties(ctx, &pb.ListPropertiesReq{})
-	if err != nil {
-		return nil, err
-	}
-
-	var properties = make([]entity.Property, 0)
-	for {
-		p, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		properties = append(properties, entity.Property{
-			ID:        p.GetPropertyID(),
-			Street:    p.GetStreet(),
-			City:      p.GetCity(),
-			StateCode: p.GetState(),
-			Zip:       p.GetZip(),
-		})
-	}
-	return properties, nil
-}
-func (d *grpcDriver) RemoveProperty(ctx context.Context, id entity.ID) error {
-	client, err := d.getClient()
-	if err != nil {
-		return err
-	}
-	_, err = client.RemoveProperty(ctx, &pb.RemovePropertyReq{PropertyID: id})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *grpcDriver) StoreTenant(ctx context.Context, tenant entity.Tenant) (*entity.Tenant, error) {
-	client, err := d.getClient()
-	if err != nil {
-		return nil, err
-	}
-	req := pb.StoreTenantReq{
-		Tenant: pb.ToTenant(tenant),
-	}
-	res, err := client.StoreTenant(ctx, &req)
-	if err != nil {
-		return nil, err
-	}
-	tenant.ID = res.TenantID
-	return &tenant, nil
-}
-func (d *grpcDriver) GetTenant(ctx context.Context, id entity.ID) (*entity.Tenant, error) {
-	client, err := d.getClient()
-	if err != nil {
-		return nil, err
-	}
-	req := pb.GetTenantReq{TenantID: id}
-	res, err := client.GetTenant(ctx, &req)
-	if err != nil {
-		return nil, err
-	}
-	return res.Tenant.ToTenant().Ptr(), nil
-}
-func (d *grpcDriver) ListTenants(ctx context.Context) ([]entity.Tenant, error) {
-	client, err := d.getClient()
-	if err != nil {
-		return nil, err
-	}
-	stream, err := client.ListTenants(ctx, &pb.ListTenantsReq{})
-	if err != nil {
-		return nil, err
-	}
-	var tenants []entity.Tenant
-	for {
-		pbTenant, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		tenants = append(tenants, pbTenant.ToTenant())
-	}
-	return tenants, nil
-}
-
-func (d *grpcDriver) getClient() (pb.RPMClient, error) {
+func rpcDriver(t testing.TB) rpc.Driver {
 	var (
+		addr        = "localhost:" + conf.GetString(config.GrpcPort)
+		client, err = newClient(t, addr)
+	)
+	require.NoError(t, err)
+	return rpc.NewDriver(client)
+}
+func newClient(t testing.TB, addr string) (pb.RPMClient, error) {
+	var (
+		conn    *grpc.ClientConn
+		connErr error
+		client  pb.RPMClient
+
 		certFile      = conf.GetString(internal.EnvServiceCertFile)
 		credentialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
 	)
@@ -218,17 +57,21 @@ func (d *grpcDriver) getClient() (pb.RPMClient, error) {
 		}
 		credentialOpt = grpc.WithTransportCredentials(creds)
 	}
-	d.connOnce.Do(func() {
-		dialOpts := []grpc.DialOption{credentialOpt}
-		d.conn, d.connErr = grpc.Dial(d.Addr, dialOpts...)
-		d.client = pb.NewRPMClient(d.conn)
+
+	dialOpts := []grpc.DialOption{credentialOpt}
+	conn, connErr = grpc.Dial(addr, dialOpts...)
+	t.Cleanup(func() {
+		if conn != nil {
+			_ = conn.Close()
+		}
 	})
-	if err := d.connErr; err != nil {
+	client = pb.NewRPMClient(conn)
+
+	if err := connErr; err != nil {
 		return nil, err
 	}
-	return d.client, nil
+	return client, nil
 }
-
 func findCertFile(relPath string) string {
 	if relPath == "" {
 		return ""

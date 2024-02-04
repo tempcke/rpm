@@ -9,10 +9,6 @@ import (
 	"github.com/tempcke/schedule"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // LowerString returns a lowercase string of length n
 func LowerString(n int) string {
 	s := make([]rune, n)

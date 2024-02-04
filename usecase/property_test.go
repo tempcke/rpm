@@ -1,8 +1,11 @@
+//go:build withDocker
+// +build withDocker
+
 package usecase_test
 
 import (
-	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,10 +15,9 @@ import (
 	"github.com/tempcke/rpm/entity/fake"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/repository"
+	"github.com/tempcke/rpm/internal/test"
 	"github.com/tempcke/rpm/usecase"
 )
-
-var ctx = context.Background()
 
 func TestAddProperty(t *testing.T) {
 	repo := repository.NewInMemoryRepo()
@@ -69,7 +71,7 @@ func TestListProperties(t *testing.T) {
 	r := repository.NewInMemoryRepo()
 
 	t.Run("empty set", func(t *testing.T) {
-		propList, err := usecase.NewPropertyManager(r).List(ctx)
+		propList, err := usecase.NewPropertyManager(r).List(ctx, usecase.AllProperties)
 		assert.NoError(t, err)
 		assert.Len(t, propList, 0)
 	})
@@ -79,12 +81,12 @@ func TestListProperties(t *testing.T) {
 		require.NoError(t, r.StoreProperty(ctx, p1))
 		require.NoError(t, r.StoreProperty(ctx, p2))
 
-		propList, err := usecase.NewPropertyManager(r).List(ctx)
+		propList, err := usecase.NewPropertyManager(r).List(ctx, usecase.AllProperties)
 		assert.NoError(t, err)
 		assert.Len(t, propList, 2)
 	})
 	t.Run("no repo", func(t *testing.T) {
-		_, err := usecase.NewPropertyManager(nil).List(ctx)
+		_, err := usecase.NewPropertyManager(nil).List(ctx, usecase.AllProperties)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, internal.ErrInternal)
 		assert.ErrorIs(t, err, usecase.ErrRepoNotSet)
@@ -144,7 +146,72 @@ func TestDelProperty(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+func TestListProperties_Search(t *testing.T) {
+	var (
+		// scope is used so this test is unique each time it runs, else it will pass only on first run
+		scope  = test.RandString(4)
+		street = ucFirst(scope) + " st" // capitalize first letter
+		city1  = "City1-" + scope
+		city2  = "City2-" + scope
+		state1 = strings.ToUpper(scope[0:2])
+		zip1   = "10001-" + scope
+		zip2   = "10002-" + scope
+		zip3   = "10003-" + scope
+		p1     = entity.NewProperty("100 "+street, city1, state1, zip1)
+		p2     = entity.NewProperty("101 "+street, city1, state1, zip2)
+		p3     = entity.NewProperty("102 "+street, city2, state1, zip3)
+		uc     = usecase.NewPropertyManager(pgRepo(t))
+	)
+	// seed 3 products with same state, two have same city
+	for _, p := range []entity.Property{p1, p2, p3} {
+		assert.NoError(t, uc.Store(ctx, p), p.String())
+	}
+
+	tests := map[string]struct {
+		expect int
+		search string
+	}{
+		"zip1":          {1, zip1},
+		"zip2":          {1, zip2},
+		"zip3":          {1, zip3},
+		"city1":         {2, city1},
+		"city2":         {1, city2},
+		"state1":        {3, state1},
+		"street":        {3, street},
+		"upper case":    {2, strings.ToUpper(city1)},
+		"lower case":    {2, strings.ToLower(city1)},
+		"street., city": {2, fmt.Sprintf("%s., %s", street, city1)},
+		"street, city":  {2, fmt.Sprintf("%s, %s", street, city1)},
+		"street city":   {2, fmt.Sprintf("%s %s", street, city1)},
+		"city, state":   {2, fmt.Sprintf("%s, %s", city1, state1)},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			f := usecase.NewPropertyFilter().WithSearch(tc.search)
+			list, err := uc.List(ctx, f)
+			require.NoError(t, err, tc.search)
+			assert.Equal(t, tc.expect, len(list), tc.search)
+			for i := range list {
+				address := removeChars(strings.ToLower(list[i].String()), ".", ",")
+				search := removeChars(strings.ToLower(tc.search), ".", ",")
+				assert.Contains(t, address, search)
+			}
+		})
+	}
+}
 
 func newPropertyFixture(r usecase.PropertyRepo) entity.Property {
 	return r.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
+}
+func pgRepo(t testing.TB) repository.Postgres {
+	return repository.NewPostgresRepo(test.DB(t))
+}
+func removeChars(s string, chars ...string) string {
+	for _, char := range chars {
+		s = strings.ReplaceAll(s, char, "")
+	}
+	return s
+}
+func ucFirst(s string) string {
+	return strings.ToUpper(string(s[0])) + s[1:]
 }

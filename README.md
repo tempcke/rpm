@@ -14,6 +14,7 @@ running the tests requires some initialization which `make test` will do for you
 - **Tenant**:   Store, Get, List
 
 ## Roadmap
+- Property Search API
 - List Properties
     - filter
     - sort

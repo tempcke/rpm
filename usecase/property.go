@@ -15,7 +15,7 @@ type (
 	}
 	PropertyReader interface {
 		GetProperty(ctx context.Context, id string) (entity.Property, error)
-		PropertyList(ctx context.Context) ([]entity.Property, error)
+		PropertyList(ctx context.Context, filter PropertyFilter) ([]entity.Property, error)
 	}
 	PropertyWriter interface {
 		NewProperty(street, city, state, zip string) entity.Property
@@ -25,6 +25,9 @@ type (
 	PropertyRepo interface {
 		PropertyReader
 		PropertyWriter
+	}
+	PropertyFilter struct {
+		Search string
 	}
 )
 
@@ -62,11 +65,11 @@ func (uc PropertyManager) Get(ctx context.Context, id string) (entity.Property, 
 	}
 	return p, nil
 }
-func (uc PropertyManager) List(ctx context.Context) ([]entity.Property, error) {
+func (uc PropertyManager) List(ctx context.Context, f PropertyFilter) ([]entity.Property, error) {
 	if err := uc.Validate(); err != nil {
 		return nil, err
 	}
-	return uc.propRepo.PropertyList(ctx)
+	return uc.propRepo.PropertyList(ctx, f)
 }
 func (uc PropertyManager) Remove(ctx context.Context, id string) error {
 	if err := uc.Validate(); err != nil {
@@ -78,9 +81,17 @@ func (uc PropertyManager) Remove(ctx context.Context, id string) error {
 	}
 	return nil
 }
+func (uc PropertyManager) Search(ctx context.Context, substr string) ([]entity.Property, error) {
+	return uc.List(ctx, PropertyFilter{Search: substr})
+}
 func (uc PropertyManager) Validate() error {
 	if uc.propRepo == nil {
 		return internal.NewErrors(internal.ErrInternal, ErrRepoNotSet)
 	}
 	return nil
 }
+
+var AllProperties = PropertyFilter{}
+
+func NewPropertyFilter() PropertyFilter                     { return PropertyFilter{} }
+func (f PropertyFilter) WithSearch(s string) PropertyFilter { f.Search = s; return f }

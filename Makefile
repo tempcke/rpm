@@ -37,6 +37,9 @@ dockerRestart: dockerDown dockerUp	## dockerDown && dockerUp
 dockerRestartApp: dockerUp	## rebuild app and replace running container
 	docker-compose up -d --no-deps --build app
 
+dockerFollowLogs: dockerUp
+	docker-compose logs -f
+
 apiCheck: dockerRestart 	## generate api docs in apicheck.md
 	docker-compose stop -t 1 app
 	godotenv ./apicheck.sh

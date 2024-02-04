@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tempcke/rpm/internal/lib/log"
@@ -20,8 +21,11 @@ func newMyLogger() myLogger {
 
 func TestLogger(t *testing.T) {
 	t.Run("get default logger without setup", func(t *testing.T) {
+		level := logrus.DebugLevel
+		viper.Set("LOG_LEVEL", level.String())
 		l := log.Logger()
 		require.NotNil(t, l)
+		assert.Equal(t, level.String(), log.Entry().Logger.Level.String())
 	})
 
 	// be aware that

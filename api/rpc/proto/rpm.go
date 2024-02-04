@@ -2,6 +2,7 @@ package pb
 
 import (
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/usecase"
 	"github.com/tempcke/schedule"
 )
 
@@ -69,5 +70,16 @@ func ToPhone(e entity.Phone) *Phone {
 	return &Phone{
 		Number: e.Number,
 		Note:   e.Note,
+	}
+}
+
+func (x *ListPropertiesReq) ToPropertyFilter() usecase.PropertyFilter {
+	return usecase.PropertyFilter{
+		Search: x.GetSearch(),
+	}
+}
+func FromPropertyFilter(f usecase.PropertyFilter) *ListPropertiesReq {
+	return &ListPropertiesReq{
+		Search: f.Search,
 	}
 }

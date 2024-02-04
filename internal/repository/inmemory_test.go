@@ -4,6 +4,12 @@ import (
 	"testing"
 
 	"github.com/tempcke/rpm/internal/repository"
+	"github.com/tempcke/rpm/usecase"
+)
+
+var (
+	_ usecase.PropertyRepo = (*repository.InMemory)(nil)
+	_ usecase.TenantRepo   = (*repository.InMemory)(nil)
 )
 
 func TestPropertyRepo_InMemory(t *testing.T) {

@@ -28,9 +28,9 @@ func NewServer(actions actions.Actions) *Server {
 	}
 	return &server
 }
-func (s Server) WithConfig(conf config.Config) *Server {
+func (s *Server) WithConfig(conf config.Config) *Server {
 	s.Conf = conf
-	return &s
+	return s
 }
 
 func (s *Server) StoreProperty(ctx context.Context, req *pb.StorePropertyReq) (*pb.StorePropertyRes, error) {
@@ -71,9 +71,10 @@ func (s *Server) GetProperty(ctx context.Context, req *pb.GetPropertyReq) (*pb.G
 	}
 	return &res, nil
 }
-func (s *Server) ListProperties(filter *pb.ListPropertiesReq, stream pb.RPM_ListPropertiesServer) error {
+func (s *Server) ListProperties(req *pb.ListPropertiesReq, stream pb.RPM_ListPropertiesServer) error {
 	var ctx = context.Background() // TODO: is there a better context to use?
-	properties, err := s.actions.ListProperties(ctx)
+	filter := req.ToPropertyFilter()
+	properties, err := s.actions.ListProperties(ctx, filter)
 	if err != nil {
 		return err // FIXME: use proper status error
 	}

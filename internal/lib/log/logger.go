@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Fields = map[string]any
+
 var (
 	logger          logrus.FieldLogger
 	defaultLogLevel = logrus.InfoLevel
@@ -31,13 +33,19 @@ func Logger() logrus.FieldLogger {
 	}
 	return logger
 }
-
-func Entry() *logrus.Entry {
-	return Logger().
-		WithField(EnvAppEnv, viper.GetString(EnvAppEnv)).
-		WithField(EnvAppName, viper.GetString(EnvAppName))
+func Entry(fields ...Fields) *logrus.Entry {
+	entry := Logger().WithFields(Fields{
+		EnvAppEnv:  conf().GetString(EnvAppEnv),
+		EnvAppName: conf().GetString(EnvAppName),
+	})
+	for _, f := range fields {
+		entry = entry.WithFields(f)
+	}
+	return entry
 }
 
+func Debug(msg string, fields ...Fields) { Entry(fields...).Debug(msg) }
+func Error(msg string, fields ...Fields) { Entry(fields...).Error(msg) }
 func Fatal(args ...interface{}) {
 	Entry().Fatal(args...)
 }
@@ -45,7 +53,6 @@ func Fatal(args ...interface{}) {
 func WithError(err error) *logrus.Entry {
 	return Entry().WithError(err)
 }
-
 func WithField(key string, value interface{}) *logrus.Entry {
 	return Entry().WithField(key, value)
 }
@@ -68,12 +75,16 @@ func defaultLogger() logrus.FieldLogger {
 	l.SetLevel(logLevel(defaultLogLevel))
 	return l
 }
-
 func logLevel(fallback logrus.Level) logrus.Level {
-	if ll := viper.GetString(EnvLogLevel); ll != "" {
+	if ll := conf().GetString(EnvLogLevel); ll != "" {
 		if lvl, err := logrus.ParseLevel(ll); err == nil {
 			return lvl
 		}
 	}
 	return fallback
+}
+func conf() *viper.Viper {
+	v := viper.GetViper()
+	v.AutomaticEnv()
+	return v
 }

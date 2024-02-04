@@ -25,7 +25,9 @@ message RemovePropertyReq {
   string propertyID = 1;
 }
 message RemovePropertyRes {}
-message ListPropertiesReq {}
+message ListPropertiesReq {
+  string search = 1;
+}
 
 message Tenant {
   string tenantID = 1;

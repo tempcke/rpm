@@ -2,12 +2,7 @@ package test
 
 import (
 	"math/rand"
-	"time"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 // RandString produces a random string of lower case letters [a-z]
 func RandString(n int) string {

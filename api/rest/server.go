@@ -13,6 +13,7 @@ import (
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/config"
 	"github.com/tempcke/rpm/internal/lib/log"
+	"github.com/tempcke/rpm/usecase"
 )
 
 const (
@@ -141,8 +142,13 @@ func (s *Server) GetPropertyById(w http.ResponseWriter, r *http.Request, propert
 	jsonResponse(w, http.StatusOK, oapi.ToProperty(*property))
 }
 func (s *Server) ListProperties(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	propList, err := s.actions.ListProperties(ctx)
+	var (
+		ctx = r.Context()
+		f   = usecase.PropertyFilter{
+			Search: r.URL.Query().Get("search"),
+		}
+	)
+	propList, err := s.actions.ListProperties(ctx, f)
 	if err != nil {
 		s.logError(err)
 		errorResponse(w, http.StatusInternalServerError, "Error fetching list")

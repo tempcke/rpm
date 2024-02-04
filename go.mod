@@ -1,6 +1,8 @@
 module github.com/tempcke/rpm
 
-go 1.18
+go 1.21
+
+toolchain go1.21.0
 
 require (
 	github.com/deepmap/oapi-codegen v1.13.4
@@ -13,6 +15,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.4
+	github.com/tempcke/path v0.1.0
 	github.com/tempcke/schedule v0.1.0
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.31.0

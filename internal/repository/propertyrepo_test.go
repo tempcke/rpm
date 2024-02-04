@@ -8,6 +8,7 @@ import (
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/entity/fake"
 	"github.com/tempcke/rpm/internal"
+	"github.com/tempcke/rpm/usecase"
 )
 
 func testStoreAndRetrieveProperty(t *testing.T, r propertyRepo) {
@@ -54,7 +55,7 @@ func testListProperties(t *testing.T, r propertyRepo) {
 	}
 
 	// list entities, this is what we want to test!
-	propList, err := r.PropertyList(ctx)
+	propList, err := r.PropertyList(ctx, usecase.AllProperties)
 	assert.NoError(t, err)
 
 	// iterate over list counting the times each id is seen

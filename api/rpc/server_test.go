@@ -15,6 +15,7 @@ import (
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/entity/fake"
 	"github.com/tempcke/rpm/internal/repository"
+	"github.com/tempcke/rpm/specifications"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,6 +24,16 @@ import (
 )
 
 var ctx = context.Background()
+
+func TestRPC_Specifications(t *testing.T) {
+	var (
+		repo      = repository.NewInMemoryRepo()
+		server    = rpc.NewServer(actions.NewActionsWithRepo(repo))
+		rpmClient = newClient(t, server)
+		driver    = rpc.NewDriver(rpmClient)
+	)
+	specifications.RunAllTests(t, driver, driver)
+}
 
 func TestRPC_Property(t *testing.T) {
 	var (
@@ -63,6 +74,23 @@ func TestRPC_Property(t *testing.T) {
 	assert.Contains(t, properties, p1.ID)
 	assertPropertyMatch(t, p1, properties[p1.ID])
 
+	// SearchProperties
+	stream, err = rpmClient.ListProperties(ctx, &pb.ListPropertiesReq{Search: p1.City})
+	require.NoError(t, err)
+	properties = make(map[string]*pb.Property, 0)
+	for {
+		p, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			t.Fatal(err)
+		}
+		properties[p.PropertyID] = p
+	}
+	assert.Contains(t, properties, p1.ID)
+	assertPropertyMatch(t, p1, properties[p1.ID])
+
 	// RemoveProperty
 	remRes, err := rpmClient.RemoveProperty(ctx, &pb.RemovePropertyReq{PropertyID: p1.ID})
 	require.NoError(t, err)
@@ -76,7 +104,6 @@ func TestRPC_Property(t *testing.T) {
 	// t.Log(s.Message())     // entity not found: property[some-id]
 	// t.Log(s.Err().Error()) // rpc error: code = NotFound desc = entity not found: property[some-id]
 }
-
 func TestRPC_Tenant(t *testing.T) {
 	var (
 		repo      = repository.NewInMemoryRepo()

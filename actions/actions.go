@@ -11,14 +11,16 @@ import (
 
 var _ specifications.Driver = (*Actions)(nil)
 
-type Actions struct {
-	propRepo   usecase.PropertyRepo
-	tenantRepo usecase.TenantRepo
-}
-type Repo interface {
-	usecase.PropertyRepo
-	usecase.TenantRepo
-}
+type (
+	Actions struct {
+		propRepo   usecase.PropertyRepo
+		tenantRepo usecase.TenantRepo
+	}
+	Repo interface {
+		usecase.PropertyRepo
+		usecase.TenantRepo
+	}
+)
 
 func NewActions() Actions               { return Actions{} }
 func NewActionsWithRepo(r Repo) Actions { return Actions{propRepo: r, tenantRepo: r} }
@@ -43,12 +45,15 @@ func (a Actions) StoreProperty(ctx context.Context, p entity.Property) (entity.I
 func (a Actions) RemoveProperty(ctx context.Context, id string) error {
 	return a.propertyMan().Remove(ctx, id)
 }
-func (a Actions) ListProperties(ctx context.Context) ([]entity.Property, error) {
-	list, err := a.propertyMan().List(ctx)
+func (a Actions) ListProperties(ctx context.Context, f usecase.PropertyFilter) ([]entity.Property, error) {
+	list, err := a.propertyMan().List(ctx, f)
 	if err != nil {
 		return nil, err
 	}
 	return list, nil
+}
+func (a Actions) SearchProperties(ctx context.Context, s string) ([]entity.Property, error) {
+	return a.propertyMan().Search(ctx, s)
 }
 func (a Actions) GetProperty(ctx context.Context, id string) (*entity.Property, error) {
 	p, err := a.propertyMan().Get(ctx, id)

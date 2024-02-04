@@ -3,7 +3,6 @@ package mig_test
 import (
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tempcke/rpm/internal/lib/mig"
@@ -29,7 +28,6 @@ func TestMakeID(t *testing.T) {
 		// make sure no index numbers are reused
 		var stepNum = 0
 		seen := make(map[string]int)
-		rand.Seed(time.Now().UnixNano())
 		for i := 0; i <= 100; i++ {
 			flowNum := rand.Intn(mig.FlowNumLimit)
 			id := mig.MakeID(prefix, flowNum, stepNum)
@@ -48,7 +46,6 @@ func TestMakeID(t *testing.T) {
 		// make sure no index numbers are reused
 		var flowNum = 1
 		seen := make(map[string]int)
-		rand.Seed(time.Now().UnixNano())
 		for i := 0; i <= 100; i++ {
 			stepNum := rand.Intn(mig.StepNumLimit)
 			id := mig.MakeID(prefix, flowNum, stepNum)

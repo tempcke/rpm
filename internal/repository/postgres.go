@@ -3,13 +3,14 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"log"
 	"strings"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/filters"
+	"github.com/tempcke/rpm/internal/lib/log"
+	"github.com/tempcke/rpm/usecase"
 )
 
 // Postgres repository should NOT be used in production
@@ -88,15 +89,23 @@ func (r Postgres) GetProperty(ctx context.Context, id string) (entity.Property, 
 
 	return p, nil
 }
-func (r Postgres) PropertyList(ctx context.Context) ([]entity.Property, error) {
-	propList := make([]entity.Property, 0)
+func (r Postgres) PropertyList(ctx context.Context, f usecase.PropertyFilter) ([]entity.Property, error) {
+	var (
+		search   = ""
+		propList = make([]entity.Property, 0)
+	)
+
+	if s := f.Search; s != "" {
+		search = "%" + removeChars(s, ".", ",") + "%"
+	}
 
 	const query = `
 		SELECT id, street, city, state, zip, created_at
-		FROM properties
+		FROM properties p
+		WHERE $1 = '' OR TRANSLATE(CONCAT(p.street, ' ', p.city, ' ', p.state, ' ', p.zip), '.', '') ILIKE $1
 	`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query, search)
 
 	if err != nil {
 		return propList, err
@@ -255,4 +264,11 @@ func (r Postgres) getTenantPhones(ctx context.Context, tenantID string) ([]entit
 		phones = append(phones, phone)
 	}
 	return phones, nil
+}
+
+func removeChars(s string, chars ...string) string {
+	for _, char := range chars {
+		s = strings.ReplaceAll(s, char, "")
+	}
+	return s
 }

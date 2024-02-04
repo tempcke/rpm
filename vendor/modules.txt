@@ -204,6 +204,9 @@ github.com/stretchr/testify/require
 # github.com/subosito/gotenv v1.4.1
 ## explicit; go 1.18
 github.com/subosito/gotenv
+# github.com/tempcke/path v0.1.0
+## explicit; go 1.21
+github.com/tempcke/path
 # github.com/tempcke/schedule v0.1.0
 ## explicit; go 1.18
 github.com/tempcke/schedule
