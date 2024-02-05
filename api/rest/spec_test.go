@@ -9,7 +9,7 @@ import (
 	"github.com/tempcke/rpm/specifications"
 )
 
-func TestAcceptanceOpenAPI_specifications(t *testing.T) {
+func TestOpenAPI_specifications(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}

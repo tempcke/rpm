@@ -28,7 +28,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Address'
+              $ref: '#/components/schemas/StorePropertyReq'
         required: true
       responses:
         '201':
@@ -36,7 +36,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Property'
+                $ref: '#/components/schemas/GetPropertyRes'
         '400':
           description: Missing or invalid fields
           content:
@@ -92,7 +92,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Address'
+              $ref: '#/components/schemas/StorePropertyReq'
         required: true
       responses:
         '200':
@@ -100,13 +100,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Property'
+                $ref: '#/components/schemas/GetPropertyRes'
         '201':
           description: added
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Property'
+                $ref: '#/components/schemas/GetPropertyRes'
         default:
           description: unexpected error
           content:
@@ -133,7 +133,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Property'
+                $ref: '#/components/schemas/GetPropertyRes'
         '404':
           description: Property not found
       security:
@@ -418,6 +418,20 @@ components:
         zip:
           type: string
           example: "75401"
+    StorePropertyReq:
+      type: object
+      required:
+        - property
+      properties:
+        property:
+          $ref: '#/components/schemas/Address'
+    GetPropertyRes:
+      type: object
+      required:
+        - property
+      properties:
+        property:
+          $ref: '#/components/schemas/Property'
     ListPropertiesRes:
       type: object
       required:

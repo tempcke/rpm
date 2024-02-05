@@ -51,6 +51,11 @@ type GetLeaseRes struct {
 	Lease Lease `json:"lease"`
 }
 
+// GetPropertyRes defines model for GetPropertyRes.
+type GetPropertyRes struct {
+	Property Property `json:"property"`
+}
+
 // GetTenantRes defines model for GetTenantRes.
 type GetTenantRes struct {
 	Tenant Tenant `json:"tenant"`
@@ -134,6 +139,11 @@ type PropertyFilter struct {
 	Search *string `json:"search,omitempty"`
 }
 
+// StorePropertyReq defines model for StorePropertyReq.
+type StorePropertyReq struct {
+	Property Address `json:"property"`
+}
+
 // StoreTenantReq defines model for StoreTenantReq.
 type StoreTenantReq struct {
 	Tenant MinTenant `json:"tenant"`
@@ -164,10 +174,10 @@ type ListPropertiesParams struct {
 type LeasePropertyJSONRequestBody = LeasePropertyReq
 
 // AddPropertyJSONRequestBody defines body for AddProperty for application/json ContentType.
-type AddPropertyJSONRequestBody = Address
+type AddPropertyJSONRequestBody = StorePropertyReq
 
 // StorePropertyJSONRequestBody defines body for StoreProperty for application/json ContentType.
-type StorePropertyJSONRequestBody = Address
+type StorePropertyJSONRequestBody = StorePropertyReq
 
 // AddTenantJSONRequestBody defines body for AddTenant for application/json ContentType.
 type AddTenantJSONRequestBody = StoreTenantReq

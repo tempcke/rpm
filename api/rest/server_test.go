@@ -66,13 +66,7 @@ func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 
 			s := rest.NewServer(acts).WithConfig(authConf(t, key, secret)).Handler()
 
-			body := map[string]string{
-				"street": p1.Street,
-				"city":   p1.City,
-				"state":  p1.StateCode,
-				"zip":    p1.Zip,
-			}
-
+			body := openapi.NewStorePropertyReq(p1)
 			res := handleReq(t, s, putReq(t, route, body, map[string]string{
 				rest.HeaderAPIKey:    reqKey,
 				rest.HeaderAPISecret: reqSecret,
@@ -112,18 +106,14 @@ func TestPutProperty(t *testing.T) {
 			route = "/property"
 			p1    = fake.Property()
 		)
-		body := map[string]string{
-			"street": p1.Street,
-			"city":   p1.City,
-			"state":  p1.StateCode,
-			"zip":    p1.Zip,
-		}
+		body := openapi.NewStorePropertyReq(p1)
 
 		res := handleReq(t, s, postReq(t, route, body, headers))
 		assertResCode(t, res, http.StatusCreated)
 		assertApplicationJson(t, res.Header)
-		var created openapi.Property
-		require.NoError(t, json.NewDecoder(res.Body).Decode(&created))
+		var resModel openapi.StorePropertyRes
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		created := resModel.Property
 
 		// check response body for the echoed entity
 		assert.NotEmpty(t, created.GetID())
@@ -142,8 +132,8 @@ func TestPutProperty(t *testing.T) {
 		require.Equal(t, http.StatusOK, res.StatusCode)
 		assertApplicationJson(t, res.Header)
 
-		var fetched openapi.Property
-		assert.NoError(t, json.NewDecoder(res.Body).Decode(&fetched))
+		assert.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		fetched := resModel.Property
 		assertEqual(t, created.GetID(), fetched.GetID())
 		assertEqual(t, p1.Street, fetched.Street)
 		assertEqual(t, p1.City, fetched.City)
@@ -155,17 +145,13 @@ func TestPutProperty(t *testing.T) {
 			p1    = fake.Property()
 			route = "/property/" + p1.ID
 		)
-		body := map[string]string{
-			"street": p1.Street,
-			"city":   p1.City,
-			"state":  p1.StateCode,
-			"zip":    p1.Zip,
-		}
+		body := openapi.NewStorePropertyReq(p1)
 
 		res := handleReq(t, s, putReq(t, route, body, headers))
 		require.Equal(t, http.StatusCreated, res.StatusCode)
-		var created openapi.Property
-		require.NoError(t, json.NewDecoder(res.Body).Decode(&created))
+		var resModel openapi.StorePropertyRes
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		created := resModel.Property
 
 		// check response body for the echoed entity
 		assertEqual(t, p1.ID, created.GetID())
@@ -181,22 +167,19 @@ func TestPutProperty(t *testing.T) {
 		)
 
 		// create property with a typo mistake of some kind
-		body := map[string]string{
-			"street": p1.Street + "typo",
-			"city":   p1.City,
-			"state":  p1.StateCode,
-			"zip":    p1.Zip,
-		}
+		body := openapi.NewStorePropertyReq(p1)
+		body.Property.Street = p1.Street + "typo"
 		res := handleReq(t, s, putReq(t, route, body, headers))
 		require.Equal(t, http.StatusCreated, res.StatusCode)
 
 		// update property fixing typo mistake
-		body["street"] = p1.Street
+		body.Property.Street = p1.Street
 		res = handleReq(t, s, putReq(t, route, body, headers))
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-		var updated openapi.Property
-		require.NoError(t, json.NewDecoder(res.Body).Decode(&updated))
+		var resModel openapi.StorePropertyRes
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		updated := resModel.Property
 
 		// check response body for the echoed entity
 		assertEqual(t, p1.ID, updated.GetID())
@@ -335,8 +318,9 @@ func TestGetProperty(t *testing.T) {
 		require.Equal(t, http.StatusOK, res.StatusCode)
 
 		// check response data structure
-		var resData openapi.Property
-		require.NoError(t, json.NewDecoder(res.Body).Decode(&resData))
+		var resModel openapi.GetPropertyRes
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		resData := resModel.Property
 		assertEqual(t, p1.ID, resData.GetID())
 		assertEqual(t, p1.Street, resData.Street)
 		assertEqual(t, p1.City, resData.City)

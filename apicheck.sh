@@ -110,11 +110,14 @@ curl -fsS -X PUT 'localhost:8080/property/property1' \
   -H 'X-API-Key: key' -H 'X-API-Secret: secret' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
-  -d '{
-  "street": "123 Main st.",
-  "city": "Dallas",
-  "state": "TX",
-  "zip": "75401"
+  -d '
+{
+  "property": {
+    "street": "123 Main st.",
+    "city": "Dallas",
+    "state": "TX",
+    "zip": "75401"
+  }
 }'
 END
 )"
@@ -128,11 +131,14 @@ curl -fsS -X PUT 'localhost:8080/property/property2' \
   -H 'X-API-Key: key' -H 'X-API-Secret: secret' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
-  -d '{
-  "street": "124 Main st.",
-  "city": "Dallas",
-  "state": "TX",
-  "zip": "75401"
+  -d '
+{
+  "property": {
+    "street": "124 Main st.",
+    "city": "Dallas",
+    "state": "TX",
+    "zip": "75401"
+  }
 }'
 END
 )"
@@ -158,7 +164,8 @@ curl -fsS -X PUT 'localhost:8080/tenant/tenant1' \
   -H 'X-API-Key: key' -H 'X-API-Secret: secret' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
-  -d '{
+  -d '
+{
   "tenant": {
     "fullName": "John Doe",
     "dlNum": "646673153",
@@ -179,7 +186,8 @@ curl -fsS -X POST 'localhost:8080/tenant' \
   -H 'X-API-Key: key' -H 'X-API-Secret: secret' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json' \
-  -d '{
+  -d '
+{
   "tenant": {
     "fullName": "Jane Doe",
     "dlNum": "746673153",

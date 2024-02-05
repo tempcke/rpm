@@ -10,6 +10,15 @@ import (
 	"github.com/tempcke/schedule"
 )
 
+type (
+	StorePropertyRes = GetPropertyRes
+	StoreTenantRes   = GetTenantRes
+)
+
+var (
+	NewStorePropertyRes = NewGetPropertyRes
+)
+
 func (x Error) Error() string {
 	var label = "openapi error"
 	if x.Code == 0 {
@@ -18,6 +27,19 @@ func (x Error) Error() string {
 	return fmt.Sprintf("%s: (%d) %s", label, x.Code, x.Message)
 }
 
+func NewStorePropertyReq(p entity.Property) *StorePropertyReq {
+	return &StorePropertyReq{
+		Property: Address{
+			Street: p.Street,
+			City:   p.City,
+			State:  p.StateCode,
+			Zip:    p.Zip,
+		},
+	}
+}
+func (x *StorePropertyReq) ToProperty() entity.Property {
+	return x.Property.ToProperty()
+}
 func (x *Property) GetID() string { return x.Id }
 func (x *Address) ToProperty() entity.Property {
 	p := Property{
@@ -44,6 +66,11 @@ func ToProperty(e entity.Property) *Property {
 		City:   e.City,
 		State:  e.StateCode,
 		Zip:    e.Zip,
+	}
+}
+func NewGetPropertyRes(in entity.Property) GetPropertyRes {
+	return GetPropertyRes{
+		Property: *ToProperty(in),
 	}
 }
 func NewListPropertiesRes(in ...entity.Property) ListPropertiesRes {

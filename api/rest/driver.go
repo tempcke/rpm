@@ -31,12 +31,7 @@ type (
 )
 
 func (d Driver) StoreProperty(ctx context.Context, p entity.Property) (string, error) {
-	body := map[string]string{
-		"street": p.Street,
-		"city":   p.City,
-		"state":  p.StateCode,
-		"zip":    p.Zip,
-	}
+	body := openapi.NewStorePropertyReq(p)
 	url := d.BaseURL + "/property"
 	req := postReq(url, body, d.headers())
 	if p.ID != "" {
@@ -47,11 +42,11 @@ func (d Driver) StoreProperty(ctx context.Context, p entity.Property) (string, e
 	if err != nil {
 		return "", err
 	}
-	var created openapi.Property
+	var created openapi.StorePropertyRes
 	if err := json.NewDecoder(res.Body).Decode(&created); err != nil {
 		return "", err
 	}
-	return created.GetID(), nil
+	return created.Property.GetID(), nil
 }
 func (d Driver) GetProperty(ctx context.Context, id ID) (*entity.Property, error) {
 	url := d.BaseURL + "/property/" + id
@@ -63,11 +58,11 @@ func (d Driver) GetProperty(ctx context.Context, id ID) (*entity.Property, error
 	if code := res.StatusCode; code >= 400 {
 		return nil, fmt.Errorf("expected 200 response, got %d", code)
 	}
-	var p openapi.Property
+	var p openapi.GetPropertyRes
 	if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
 		return nil, err
 	}
-	property := p.ToProperty()
+	property := p.Property.ToProperty()
 	return &property, nil
 }
 func (d Driver) ListProperties(ctx context.Context, f usecase.PropertyFilter) ([]entity.Property, error) {

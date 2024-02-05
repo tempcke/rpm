@@ -103,7 +103,7 @@ func (s *Server) StoreProperty(w http.ResponseWriter, r *http.Request, id string
 	var (
 		ctx     = r.Context()
 		resCode = http.StatusCreated
-		data    oapi.StorePropertyJSONRequestBody
+		data    oapi.StorePropertyReq
 	)
 	if err := decodeRequestData(w, r.Body, &data); err != nil {
 		return
@@ -121,7 +121,7 @@ func (s *Server) StoreProperty(w http.ResponseWriter, r *http.Request, id string
 		return
 	}
 
-	jsonResponse(w, resCode, oapi.ToProperty(property),
+	jsonResponse(w, resCode, oapi.NewStorePropertyRes(property),
 		Header{"Location", "/property/" + property.ID})
 }
 func (s *Server) GetPropertyById(w http.ResponseWriter, r *http.Request, propertyID string) {
@@ -138,7 +138,7 @@ func (s *Server) GetPropertyById(w http.ResponseWriter, r *http.Request, propert
 		}
 		return
 	}
-	jsonResponse(w, http.StatusOK, oapi.ToProperty(*property))
+	jsonResponse(w, http.StatusOK, oapi.NewGetPropertyRes(*property))
 }
 func (s *Server) ListProperties(w http.ResponseWriter, r *http.Request, params oapi.ListPropertiesParams) {
 	var (
