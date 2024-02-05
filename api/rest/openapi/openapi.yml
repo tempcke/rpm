@@ -15,7 +15,7 @@ externalDocs:
   description: ReadMe docs
   url: https://github.com/tempcke/rpm/README.md
 servers:
-  - url: https://localhost:8080
+  - url: http://localhost:8080
 
 paths:
   /property:
@@ -28,7 +28,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewProperty'
+              $ref: '#/components/schemas/Address'
         required: true
       responses:
         '201':
@@ -51,13 +51,21 @@ paths:
         - property
       summary: List properties
       operationId: listProperties
+      parameters:
+        - name: search
+          in: query
+          description: This will search the address for any substring.
+          required: false
+          schema:
+            type: string
+            example: dallas tx
       responses:
         '200':
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PropertyList'
+                $ref: '#/components/schemas/ListPropertiesRes'
         default:
           description: unexpected error
           content:
@@ -84,7 +92,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewProperty'
+              $ref: '#/components/schemas/Address'
         required: true
       responses:
         '200':
@@ -353,7 +361,6 @@ paths:
         - key: []
           secret: []
 
-
 components:
   schemas:
     ErrorResponse:
@@ -383,7 +390,7 @@ components:
 
     Property:
       allOf:
-        - $ref: '#/components/schemas/NewProperty'
+        - $ref: '#/components/schemas/Address'
         - type: object
           required:
             - id
@@ -391,7 +398,7 @@ components:
             id:
               type: string
               example: "2e6b722b-04a9-44f8-8afc-b9327d495467"
-    NewProperty:
+    Address:
       required:
         - street
         - city
@@ -411,16 +418,22 @@ components:
         zip:
           type: string
           example: "75401"
-    PropertyList:
+    ListPropertiesRes:
       type: object
       required:
         - properties
       properties:
+        filter:
+          $ref: '#/components/schemas/PropertyFilter'
         properties:
           type: array
           items:
             $ref: '#/components/schemas/Property'
-
+    PropertyFilter:
+      properties:
+        search:
+          type: string
+          example: "dallas tx"
     Tenant:
       allOf:
         - $ref: '#/components/schemas/MinTenant'

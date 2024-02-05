@@ -1,20 +1,26 @@
 package fake
 
 import (
+	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/internal/test"
 )
 
 func Property() entity.Property {
-	streetNum := strconv.Itoa(rand.Intn(8000) + 1000)
+	var (
+		scope  = test.RandString(5)
+		number = strconv.Itoa(rand.Intn(80000) + 10000)
+	)
 	return entity.Property{
 		ID:        entity.NewID(),
-		Street:    streetNum + " Main st.",
-		City:      "Dallas",
-		StateCode: "TX",
-		Zip:       "75001",
+		Street:    fmt.Sprintf("%s N %s st.", number[0:3], ucFirst(scope)),
+		City:      ucFirst(scope[1:5]) + " City",
+		StateCode: strings.ToUpper(scope[2:4]),
+		Zip:       number[0:5],
 	}
 }
 func Tenant() entity.Tenant {
@@ -38,4 +44,7 @@ func Phone() entity.Phone {
 		Number: "555-555-" + strconv.Itoa(n),
 		Note:   LowerString(5),
 	}
+}
+func ucFirst(s string) string {
+	return strings.ToUpper(string(s[0])) + s[1:]
 }

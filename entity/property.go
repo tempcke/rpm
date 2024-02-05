@@ -28,6 +28,8 @@ func NewProperty(street, city, state, zip string) Property {
 		CreatedAt: time.Now(),
 	}
 }
+func (p Property) WithID(id ID) Property     { p.ID = id; return p }
+func (p Property) WithZip(v string) Property { p.Zip = v; return p }
 
 // GetID of entity
 // method needed to implement entity.Entity
@@ -41,11 +43,6 @@ func (p Property) Validate() error {
 		return internal.ErrEntityInvalid
 	}
 	return nil
-}
-
-func (p Property) WithID(id ID) Property {
-	p.ID = id
-	return p
 }
 
 func (p Property) Equal(p2 Property) bool {

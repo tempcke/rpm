@@ -95,6 +95,13 @@ execRoutes() {
   execCmd "GET property1" "${getProperty1} | json_pp"
   execCmd "PUT and DELETE property2" "${putProperty2}" "${delProperty2}"
   execCmd "GET properties" "${getProperties} | json_pp"
+  execCmd "Search properties" "${searchProperties} | json_pp"
+
+  h2 "Tenant CRUD"
+  execCmd "PUT tenant1" "${putTenant1} | json_pp"
+  execCmd "GET tenant1" "${getTenant1} | json_pp"
+  execCmd "POST tenant" "${postTenant} | json_pp"
+  execCmd "GET tenants" "${getTenants} | json_pp"
 }
 
 # Property CRUD
@@ -136,6 +143,55 @@ END
 )"
 getProperties="$(cat <<'END'
 curl -fsS -X GET 'localhost:8080/property' \
+  -H 'X-API-Key: key' -H 'X-API-Secret: secret'
+END
+)"
+searchProperties="$(cat <<'END'
+curl -fsS -X GET 'localhost:8080/property?search=dallas%20tx' \
+  -H 'X-API-Key: key' -H 'X-API-Secret: secret'
+END
+)"
+
+# Tenant CRUD
+putTenant1="$(cat <<'END'
+curl -fsS -X PUT 'localhost:8080/tenant/tenant1' \
+  -H 'X-API-Key: key' -H 'X-API-Secret: secret' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  -d '{
+  "tenant": {
+    "fullName": "John Doe",
+    "dlNum": "646673153",
+    "dlState": "TX",
+    "dob": "2006-01-02",
+    "phones": [{"number": "555-555-1234", "desc": "mobile"}]
+  }
+}'
+END
+)"
+getTenant1="$(cat <<'END'
+curl -fsS -X GET 'localhost:8080/tenant/tenant1' \
+  -H 'X-API-Key: key' -H 'X-API-Secret: secret'
+END
+)"
+postTenant="$(cat <<'END'
+curl -fsS -X POST 'localhost:8080/tenant' \
+  -H 'X-API-Key: key' -H 'X-API-Secret: secret' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  -d '{
+  "tenant": {
+    "fullName": "Jane Doe",
+    "dlNum": "746673153",
+    "dlState": "TX",
+    "dob": "2006-01-02",
+    "phones": [{"number": "555-555-1235", "desc": "mobile"}]
+  }
+}'
+END
+)"
+getTenants="$(cat <<'END'
+curl -fsS -X GET 'localhost:8080/tenant' \
   -H 'X-API-Key: key' -H 'X-API-Secret: secret'
 END
 )"

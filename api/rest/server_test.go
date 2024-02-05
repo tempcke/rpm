@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tempcke/path"
 	"github.com/tempcke/rpm/actions"
 	"github.com/tempcke/rpm/api/rest"
 	"github.com/tempcke/rpm/api/rest/openapi"
@@ -245,9 +246,9 @@ func TestListProperties(t *testing.T) {
 		res := handleReq(t, s, getReq(t, route, headers))
 		assertResCode(t, res, http.StatusOK)
 
-		var propList openapi.PropertyList
-		require.NoError(t, json.NewDecoder(res.Body).Decode(&propList))
-		assert.Len(t, propList.Properties, 0)
+		var resModel openapi.ListPropertiesRes
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		assert.Len(t, resModel.Properties, 0)
 	})
 	t.Run("200 list two properties", func(t *testing.T) {
 		var (
@@ -266,16 +267,16 @@ func TestListProperties(t *testing.T) {
 		res := handleReq(t, s, getReq(t, route, headers))
 		require.Equal(t, http.StatusOK, res.StatusCode)
 
-		var propList openapi.PropertyList
-		require.NoError(t, json.NewDecoder(res.Body).Decode(&propList))
-		assert.Len(t, propList.Properties, 2)
+		var resModel openapi.ListPropertiesRes
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		assert.Len(t, resModel.Properties, 2)
 
 		// ensure those results are among the properties added
 		propMap := map[string]entity.Property{
 			p1.ID: p1,
 			p2.ID: p2,
 		}
-		for _, item := range propList.Properties {
+		for _, item := range resModel.Properties {
 			p, ok := propMap[item.GetID()]
 			require.True(t, ok)
 			assertEqual(t, p.Street, item.Street)
@@ -285,7 +286,32 @@ func TestListProperties(t *testing.T) {
 		}
 
 		// make sure the same property wasn't just listed twice...
-		assert.NotEqual(t, propList.Properties[0].GetID(), propList.Properties[1].GetID())
+		assert.NotEqual(t, resModel.Properties[0].GetID(), resModel.Properties[1].GetID())
+	})
+	t.Run("find one of two properties by zip", func(t *testing.T) {
+		var (
+			repo = repository.NewInMemoryRepo()
+			s    = rest.NewServer(actions.NewActionsWithRepo(repo)).
+				WithConfig(noAuthConf(t)).Handler()
+		)
+
+		// create two properties in propRepo
+		p1 := fake.Property().WithZip("10001")
+		p2 := fake.Property().WithZip("10002")
+		require.NoError(t, repo.StoreProperty(ctx, p1))
+		require.NoError(t, repo.StoreProperty(ctx, p2))
+
+		p := path.New(route).WithQueryArgs(map[string]string{"search": p2.Zip})
+
+		// list via API
+		res := handleReq(t, s, getReq(t, p.String(), headers))
+		require.Equal(t, http.StatusOK, res.StatusCode)
+
+		var resModel openapi.ListPropertiesRes
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&resModel))
+		assert.Len(t, resModel.Properties, 1)
+
+		assert.Equal(t, p2, resModel.Properties[0].ToProperty())
 	})
 }
 func TestGetProperty(t *testing.T) {
@@ -386,7 +412,7 @@ func TestOAPI_Tenant(t *testing.T) {
 			var (
 				route = "/tenant"
 				in1   = fake.Tenant().WithID("")
-				body  = openapi.ToStoreTenantReq(in1)
+				body  = openapi.NewStoreTenantReq(in1)
 			)
 			res := handleReq(t, s, postReq(t, route, body, headers))
 			assertResCode(t, res, http.StatusCreated)
@@ -403,7 +429,7 @@ func TestOAPI_Tenant(t *testing.T) {
 			id    = entity.NewID()
 			route = "/tenant/" + id
 			inA   = fake.Tenant().WithID("")
-			body  = openapi.ToStoreTenantReq(inA)
+			body  = openapi.NewStoreTenantReq(inA)
 		)
 		res := handleReq(t, s, putReq(t, route, body, headers))
 		assertResCode(t, res, http.StatusCreated)
@@ -416,7 +442,7 @@ func TestOAPI_Tenant(t *testing.T) {
 		// 200 update
 		var inB = created.Tenant.ToTenant().WithName(fake.FullName())
 		var updated openapi.GetTenantRes
-		res2 := handleReq(t, s, putReq(t, route, openapi.ToStoreTenantReq(inB), headers))
+		res2 := handleReq(t, s, putReq(t, route, openapi.NewStoreTenantReq(inB), headers))
 		assertResCode(t, res2, http.StatusOK)
 		assertApplicationJson(t, res2.Header)
 		require.NoError(t, json.NewDecoder(res2.Body).Decode(&updated))
@@ -437,7 +463,7 @@ func TestOAPI_Tenant(t *testing.T) {
 			in       = fake.Tenant()
 			id       = in.GetID()
 			route    = "/tenant/" + id
-			storeReq = openapi.ToStoreTenantReq(in)
+			storeReq = openapi.NewStoreTenantReq(in)
 		)
 
 		// store
@@ -459,8 +485,8 @@ func TestOAPI_Tenant(t *testing.T) {
 		)
 
 		// store both
-		handleReq(t, s, putReq(t, "/tenant/"+tenant1.GetID(), openapi.ToStoreTenantReq(tenant1), headers))
-		handleReq(t, s, putReq(t, "/tenant/"+tenant2.GetID(), openapi.ToStoreTenantReq(tenant2), headers))
+		handleReq(t, s, putReq(t, "/tenant/"+tenant1.GetID(), openapi.NewStoreTenantReq(tenant1), headers))
+		handleReq(t, s, putReq(t, "/tenant/"+tenant2.GetID(), openapi.NewStoreTenantReq(tenant2), headers))
 
 		// 200 get
 		var fetched openapi.TenantList

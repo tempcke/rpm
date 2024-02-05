@@ -80,7 +80,7 @@ func (d Driver) ListProperties(ctx context.Context, f usecase.PropertyFilter) ([
 	if err != nil {
 		return nil, err
 	}
-	var list openapi.PropertyList
+	var list openapi.ListPropertiesRes
 	if err := json.NewDecoder(res.Body).Decode(&list); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (d Driver) RemoveProperty(ctx context.Context, id ID) error {
 }
 
 func (d Driver) StoreTenant(ctx context.Context, tenant entity.Tenant) (*entity.Tenant, error) {
-	body := openapi.ToStoreTenantReq(tenant)
+	body := openapi.NewStoreTenantReq(tenant)
 	route := "/tenant"
 	req := postReq(d.url(route), body, d.headers())
 	if tenant.ID != "" {

@@ -26,6 +26,14 @@ const (
 	MinLeaseRentIntervalWeekly  MinLeaseRentInterval = "weekly"
 )
 
+// Address defines model for Address.
+type Address struct {
+	City   string `json:"city"`
+	State  string `json:"state"`
+	Street string `json:"street"`
+	Zip    string `json:"zip"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    int32  `json:"code"`
@@ -75,6 +83,12 @@ type LeasePropertyReq struct {
 	Lease MinLease `json:"lease"`
 }
 
+// ListPropertiesRes defines model for ListPropertiesRes.
+type ListPropertiesRes struct {
+	Filter     *PropertyFilter `json:"filter,omitempty"`
+	Properties []Property      `json:"properties"`
+}
+
 // MinLease defines model for MinLease.
 type MinLease struct {
 	// Currency will default to USD when empty
@@ -100,14 +114,6 @@ type MinTenant struct {
 	Phones   []Phone            `json:"phones"`
 }
 
-// NewProperty defines model for NewProperty.
-type NewProperty struct {
-	City   string `json:"city"`
-	State  string `json:"state"`
-	Street string `json:"street"`
-	Zip    string `json:"zip"`
-}
-
 // Phone defines model for Phone.
 type Phone struct {
 	Desc   string `json:"desc"`
@@ -123,9 +129,9 @@ type Property struct {
 	Zip    string `json:"zip"`
 }
 
-// PropertyList defines model for PropertyList.
-type PropertyList struct {
-	Properties []Property `json:"properties"`
+// PropertyFilter defines model for PropertyFilter.
+type PropertyFilter struct {
+	Search *string `json:"search,omitempty"`
 }
 
 // StoreTenantReq defines model for StoreTenantReq.
@@ -148,14 +154,20 @@ type TenantList struct {
 	Tenants []Tenant `json:"tenants"`
 }
 
+// ListPropertiesParams defines parameters for ListProperties.
+type ListPropertiesParams struct {
+	// Search This will search the address for any substring.
+	Search *string `form:"search,omitempty" json:"search,omitempty"`
+}
+
 // LeasePropertyJSONRequestBody defines body for LeaseProperty for application/json ContentType.
 type LeasePropertyJSONRequestBody = LeasePropertyReq
 
 // AddPropertyJSONRequestBody defines body for AddProperty for application/json ContentType.
-type AddPropertyJSONRequestBody = NewProperty
+type AddPropertyJSONRequestBody = Address
 
 // StorePropertyJSONRequestBody defines body for StoreProperty for application/json ContentType.
-type StorePropertyJSONRequestBody = NewProperty
+type StorePropertyJSONRequestBody = Address
 
 // AddTenantJSONRequestBody defines body for AddTenant for application/json ContentType.
 type AddTenantJSONRequestBody = StoreTenantReq

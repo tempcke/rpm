@@ -30,35 +30,7 @@ running the tests requires some initialization which `make test` will do for you
 - Command Line Interface (CLI)
     
 ## RESTful API requests
-### Add Property
-```
-curl -X POST "http://localhost:8080/property" \
-     -H 'Content-Type: application/json' \
-     -H 'Accept: application/json' \
-     -d '{
-  "street": "123 Main st.",
-  "city": "Dallas",
-  "state": "TX",
-  "zip": "75401"
-}' | json_pp
-```
-
-### List Properties
-```
-curl -X GET "http://localhost:8080/property" \
-     -H 'Accept: application/json' | json_pp
-```
-
-### Get Property Detail
-```
-curl -X GET "http://localhost:8080/property/{propertyId}" \
-     -H 'Accept: application/json' | json_pp
-```
-
-### Delete Property
-```
-curl -X DELETE "http://localhost:8080/property/{propertyId}"
-```
+There is a shell script [apicheck.sh](https://github.com/tempcke/rpm/blob/master/apicheck.sh) which can be executed via `make apiCheck`.  This script calls the restful endpoints on the binary application running in docker and generates [apicheck.md](https://github.com/tempcke/rpm/blob/master/apicheck.md).  The goal of this is to auto generate api example docs from hitting the actual running api, so you can see what the real requests and responses look like.
 
 [build-img]: https://github.com/tempcke/rpm/actions/workflows/test.yml/badge.svg
 [build-url]: https://github.com/tempcke/rpm/actions

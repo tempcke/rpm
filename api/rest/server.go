@@ -13,7 +13,6 @@ import (
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/config"
 	"github.com/tempcke/rpm/internal/lib/log"
-	"github.com/tempcke/rpm/usecase"
 )
 
 const (
@@ -67,7 +66,7 @@ func (s *Server) StoreTenant(w http.ResponseWriter, r *http.Request, id string) 
 		return
 	}
 
-	jsonResponse(w, resCode, oapi.ToGetTenantRes(tenant),
+	jsonResponse(w, resCode, oapi.NewGetTenantRes(tenant),
 		Header{"Location", "/tenant/" + tenant.ID})
 }
 func (s *Server) GetTenant(w http.ResponseWriter, r *http.Request, id string) {
@@ -84,7 +83,7 @@ func (s *Server) GetTenant(w http.ResponseWriter, r *http.Request, id string) {
 		}
 		return
 	}
-	jsonResponse(w, http.StatusOK, oapi.ToGetTenantRes(*tenant))
+	jsonResponse(w, http.StatusOK, oapi.NewGetTenantRes(*tenant))
 }
 func (s *Server) ListTenants(w http.ResponseWriter, r *http.Request) {
 	var ctx = r.Context()
@@ -141,12 +140,10 @@ func (s *Server) GetPropertyById(w http.ResponseWriter, r *http.Request, propert
 	}
 	jsonResponse(w, http.StatusOK, oapi.ToProperty(*property))
 }
-func (s *Server) ListProperties(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ListProperties(w http.ResponseWriter, r *http.Request, params oapi.ListPropertiesParams) {
 	var (
 		ctx = r.Context()
-		f   = usecase.PropertyFilter{
-			Search: r.URL.Query().Get("search"),
-		}
+		f   = params.ToFilter()
 	)
 	propList, err := s.actions.ListProperties(ctx, f)
 	if err != nil {
@@ -154,7 +151,7 @@ func (s *Server) ListProperties(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusInternalServerError, "Error fetching list")
 		return
 	}
-	jsonResponse(w, http.StatusOK, oapi.ToPropertyList(propList...))
+	jsonResponse(w, http.StatusOK, oapi.NewListPropertiesRes(propList...))
 }
 func (s *Server) DeleteProperty(w http.ResponseWriter, r *http.Request, propertyID string) {
 	ctx := r.Context()

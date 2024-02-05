@@ -6,6 +6,7 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/types"
 	"github.com/tempcke/rpm/entity"
+	"github.com/tempcke/rpm/usecase"
 	"github.com/tempcke/schedule"
 )
 
@@ -18,7 +19,7 @@ func (x Error) Error() string {
 }
 
 func (x *Property) GetID() string { return x.Id }
-func (x *NewProperty) ToProperty() entity.Property {
+func (x *Address) ToProperty() entity.Property {
 	p := Property{
 		Street: x.Street,
 		City:   x.City,
@@ -45,21 +46,26 @@ func ToProperty(e entity.Property) *Property {
 		Zip:    e.Zip,
 	}
 }
-func ToPropertyList(in ...entity.Property) PropertyList {
+func NewListPropertiesRes(in ...entity.Property) ListPropertiesRes {
 	var list = make([]Property, len(in))
 	for i, e := range in {
 		list[i] = *ToProperty(e)
 	}
-	return PropertyList{
+	return ListPropertiesRes{
 		Properties: list,
 	}
 }
-func (x *PropertyList) ToProperties() []entity.Property {
+func (x *ListPropertiesRes) ToProperties() []entity.Property {
 	var list = make([]entity.Property, len(x.Properties))
 	for i, e := range x.Properties {
 		list[i] = e.ToProperty()
 	}
 	return list
+}
+func (x *ListPropertiesParams) ToFilter() usecase.PropertyFilter {
+	return usecase.PropertyFilter{
+		Search: removePointer(x.Search),
+	}
 }
 
 type Date = types.Date
@@ -129,7 +135,7 @@ func ToTenantList(in ...entity.Tenant) TenantList {
 		Tenants: list,
 	}
 }
-func ToStoreTenantReq(in entity.Tenant) *StoreTenantReq {
+func NewStoreTenantReq(in entity.Tenant) *StoreTenantReq {
 	return &StoreTenantReq{
 		Tenant: MinTenant{
 			DlNum:    in.DLNum,
@@ -140,7 +146,7 @@ func ToStoreTenantReq(in entity.Tenant) *StoreTenantReq {
 		},
 	}
 }
-func ToGetTenantRes(in entity.Tenant) GetTenantRes {
+func NewGetTenantRes(in entity.Tenant) GetTenantRes {
 	return GetTenantRes{Tenant: *ToTenant(in)}
 }
 func ToTenant(in entity.Tenant) *Tenant {
@@ -178,4 +184,12 @@ func FromPhones(in ...Phone) []entity.Phone {
 		}
 	}
 	return list
+}
+
+func removePointer[T any](in *T) T {
+	var out T
+	if in != nil {
+		out = *in
+	}
+	return out
 }

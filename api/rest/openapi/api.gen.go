@@ -25,7 +25,7 @@ type ServerInterface interface {
 	GetLease(w http.ResponseWriter, r *http.Request, leaseID string)
 	// List properties
 	// (GET /property)
-	ListProperties(w http.ResponseWriter, r *http.Request)
+	ListProperties(w http.ResponseWriter, r *http.Request, params ListPropertiesParams)
 	// Add Property
 	// (POST /property)
 	AddProperty(w http.ResponseWriter, r *http.Request)
@@ -76,7 +76,7 @@ func (_ Unimplemented) GetLease(w http.ResponseWriter, r *http.Request, leaseID 
 
 // List properties
 // (GET /property)
-func (_ Unimplemented) ListProperties(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) ListProperties(w http.ResponseWriter, r *http.Request, params ListPropertiesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -209,12 +209,25 @@ func (siw *ServerInterfaceWrapper) GetLease(w http.ResponseWriter, r *http.Reque
 func (siw *ServerInterfaceWrapper) ListProperties(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	var err error
+
 	ctx = context.WithValue(ctx, KeyScopes, []string{})
 
 	ctx = context.WithValue(ctx, SecretScopes, []string{})
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPropertiesParams
+
+	// ------------- Optional query parameter "search" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "search", r.URL.Query(), &params.Search)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "search", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListProperties(w, r)
+		siw.Handler.ListProperties(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
