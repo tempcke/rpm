@@ -1,7 +1,7 @@
 project = $(shell basename $(shell pwd))
 
 help:				## display help information
-	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 build:				## create binary
 	go build -o bin/rpm cmd/rpmserver/*.go
@@ -37,7 +37,7 @@ dockerRestart: dockerDown dockerUp	## dockerDown && dockerUp
 dockerRestartApp: dockerUp	## rebuild app and replace running container
 	docker-compose up -d --no-deps --build app
 
-dockerFollowLogs: dockerUp
+dockerFollowLogs: dockerUp  ## live stream logs from docker-compose
 	docker-compose logs -f
 
 apiCheck: dockerRestart 	## generate api docs in apicheck.md
