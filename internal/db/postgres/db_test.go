@@ -15,8 +15,7 @@ import (
 
 func TestDB(t *testing.T) {
 	tblName := test.RandString(6)
-	dsn := postgres.MakeDSN(test.GetConfig())
-	db, err := postgres.DB(dsn)
+	db, err := postgres.NewDB(test.Config())
 	require.NoError(t, err)
 	query := fmt.Sprintf(`create table if not exists %s (id text primary key);`, tblName)
 	_, err = db.Exec(query)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/db/postgres/migrate"
 	"github.com/tempcke/rpm/internal/lib/log"
 )
@@ -16,29 +17,6 @@ var (
 	ErrConnectionFailed = errors.New("failed to connect to database")
 	ErrMigrationsFailed = errors.New("migrate up failed")
 )
-
-type Config interface {
-	PostgresDSN() string
-	PostgresHost() string
-	PostgresPort() int
-	PostgresUser() string
-	PostgresPass() string
-	PostgresDB() string
-}
-
-func MakeDSN(conf Config) string {
-	if dsn := conf.PostgresDSN(); dsn != "" {
-		return dsn
-	}
-	dsn := fmt.Sprintf(
-		"host=%s port=%v user=%s password=%s dbname=%s sslmode=disable",
-		conf.PostgresHost(),
-		conf.PostgresPort(),
-		conf.PostgresUser(),
-		conf.PostgresPass(),
-		conf.PostgresDB())
-	return dsn
-}
 
 func DB(dsn string) (*sql.DB, error) {
 	if _db == nil || _db.Ping() != nil {
@@ -61,4 +39,22 @@ func DB(dsn string) (*sql.DB, error) {
 		_db = db
 	}
 	return _db, _db.Ping()
+}
+
+func NewDB(c Config) (*sql.DB, error) {
+	if dsn := c.GetString(internal.EnvPostgresDSN); dsn != "" {
+		return DB(dsn)
+	}
+	return DB(fmt.Sprintf(
+		"host=%s port=%v user=%s password=%s dbname=%s sslmode=%s",
+		c.GetString(internal.EnvPostgresHost),
+		c.GetString(internal.EnvPostgresPort),
+		c.GetString(internal.EnvPostgresUser),
+		c.GetString(internal.EnvPostgresPass),
+		c.GetString(internal.EnvPostgresDB),
+		c.GetString(internal.EnvPostgresSSLMode)))
+}
+
+type Config interface {
+	GetString(key string) string
 }

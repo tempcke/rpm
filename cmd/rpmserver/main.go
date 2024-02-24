@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"flag"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 
 	_ "github.com/lib/pq" // db driver
@@ -15,7 +18,7 @@ import (
 	"github.com/tempcke/rpm/api/rpc"
 	pb "github.com/tempcke/rpm/api/rpc/proto"
 	"github.com/tempcke/rpm/internal"
-	"github.com/tempcke/rpm/internal/config"
+	"github.com/tempcke/rpm/internal/configs"
 	"github.com/tempcke/rpm/internal/db/postgres"
 	"github.com/tempcke/rpm/internal/lib/log"
 	"github.com/tempcke/rpm/internal/repository"
@@ -24,60 +27,64 @@ import (
 )
 
 func main() {
-	if err := run(log.Entry()); err != nil {
+	var (
+		ctx = context.Background()
+	)
+	if err := run(ctx, os.Getenv, os.Args[1:]...); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(log logrus.FieldLogger) error {
+func run(
+	ctx context.Context,
+	getenv func(string) string,
+	args ...string,
+) error {
 	var (
-		conf = config.GetConfig()
-		c    = make(chan error)
+		errChan = make(chan error)
+		logger  = log.Entry()
+		conf    = buildConfig(getenv, args...)
 	)
 
-	db, err := postgres.DB(postgres.MakeDSN(conf))
+	db, err := postgres.NewDB(conf)
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres: %w", err)
 	}
 	defer func() { _ = db.Close() }()
 
-	// TODO: if either of these fail the other is orphaned but we
-	//  return to main and the program exits.  we must find a way
-	//  to gracefully shut down the other
-	go func() {
-		c <- openapiServer(conf, db, log)
-	}()
+	// TODO: graceful shut down
+	go func() { errChan <- openapiServer(conf, db, logger) }()
 
-	go func() {
-		c <- grpcServer(conf, db, log)
-	}()
+	go func() { errChan <- grpcServer(conf, db, logger) }()
 
-	return <-c
+	return <-errChan
 }
 
-func openapiServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
+func openapiServer(conf Config, db *sql.DB, log logrus.FieldLogger) error {
 	var (
 		r    = repo(db)
 		acts = actions.NewActions().
 			WithPropertyRepo(r).WithTenantRepo(r)
-		port = ":" + conf.GetString(config.AppPort)
+		port      = ":" + conf.GetString(internal.EnvAppPort)
+		apiKey    = conf.GetString(internal.EnvAPIKey)
+		apiSecret = conf.GetString(internal.EnvAPISecret)
 	)
 	if port == ":" {
-		return errors.New(config.AppPort + " not configured")
+		return errors.New(internal.EnvAppPort + " not configured")
 	}
 
-	server := rest.NewServer(acts).WithConfig(conf)
+	server := rest.NewServer(acts).WithCredentials(apiKey, apiSecret)
 
 	log.Info("Listening on " + port)
 	fmt.Println("Listening on " + port)
 	return http.ListenAndServe(port, server.Handler())
 }
-func grpcServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
+func grpcServer(conf Config, db *sql.DB, log logrus.FieldLogger) error {
 	var (
-		port = ":" + conf.GetString(config.GrpcPort)
+		port = ":" + conf.GetString(internal.EnvGrpcPort)
 	)
 	if port == ":" {
-		return errors.New(config.GrpcPort + " not configured")
+		return errors.New(internal.EnvGrpcPort + " not configured")
 	}
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -93,7 +100,7 @@ func grpcServer(conf config.Config, db *sql.DB, log logrus.FieldLogger) error {
 	fmt.Println("Listening on " + port)
 	return s.Serve(lis)
 }
-func grpcOptions(conf config.Config, log logrus.FieldLogger) []grpc.ServerOption {
+func grpcOptions(conf Config, log logrus.FieldLogger) []grpc.ServerOption {
 	var (
 		certFile = conf.GetString(internal.EnvServiceCertFile)
 		keyFile  = conf.GetString(internal.EnvServiceKeyFile)
@@ -118,4 +125,34 @@ func repo(db *sql.DB) repository.Postgres {
 		_repo = repository.NewPostgresRepo(db)
 	})
 	return _repo
+}
+
+type Config interface {
+	GetString(string) string
+}
+
+func buildConfig(envFn func(string) string, args ...string) configs.Config {
+	return configs.New(
+		configs.WithFlagSet(getFlagSet()),
+		configs.WithEnvFunc(envFn),
+		configs.WithArgs(args), // os.Args[1:] from main()
+	)
+}
+func getFlagSet() *flag.FlagSet {
+	fs := flag.NewFlagSet("", flag.ExitOnError)
+	fs.String(internal.EnvLogLevel, "info", "debug|info|warn|error")
+	fs.String(internal.EnvAppEnv, "local", "local|dev|stage|prod")
+	fs.String(internal.EnvAppPort, "8080", "http service port")
+	fs.String(internal.EnvGrpcPort, "8443", "grpc service port")
+	fs.String(internal.EnvAPIKey, "", "api key")
+	fs.String(internal.EnvAPISecret, "", "api secret")
+	fs.String(internal.EnvServiceCertFile, "", "service cert file")
+	fs.String(internal.EnvServiceKeyFile, "", "service key file")
+	fs.String(internal.EnvPostgresHost, "localhost", "postgres host")
+	fs.String(internal.EnvPostgresPort, "5432", "postgres port")
+	fs.String(internal.EnvPostgresUser, "postgres", "postgres user")
+	fs.String(internal.EnvPostgresPass, "password", "postgres password")
+	fs.String(internal.EnvPostgresDB, "rpm", "postgres database")
+	fs.String(internal.EnvPostgresSSLMode, "disable", "postgres sslmode")
+	return fs
 }

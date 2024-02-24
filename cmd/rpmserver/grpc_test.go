@@ -13,7 +13,6 @@ import (
 	"github.com/tempcke/rpm/api/rpc"
 	pb "github.com/tempcke/rpm/api/rpc/proto"
 	"github.com/tempcke/rpm/internal"
-	"github.com/tempcke/rpm/internal/config"
 	"github.com/tempcke/rpm/specifications"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -34,7 +33,7 @@ func TestAcceptanceGRPC_specifications(t *testing.T) {
 }
 func rpcDriver(t testing.TB) rpc.Driver {
 	var (
-		addr        = "localhost:" + conf.GetString(config.GrpcPort)
+		addr        = "localhost:" + conf.GetString(internal.EnvGrpcPort)
 		client, err = newClient(t, addr)
 	)
 	require.NoError(t, err)

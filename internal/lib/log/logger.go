@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"github.com/tempcke/rpm/internal/configs"
 )
 
 type Fields = map[string]any
@@ -83,8 +83,6 @@ func logLevel(fallback logrus.Level) logrus.Level {
 	}
 	return fallback
 }
-func conf() *viper.Viper {
-	v := viper.GetViper()
-	v.AutomaticEnv()
-	return v
+func conf() configs.Config {
+	return configs.New()
 }

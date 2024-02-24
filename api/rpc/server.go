@@ -7,7 +7,6 @@ import (
 	"github.com/tempcke/rpm/actions"
 	pb "github.com/tempcke/rpm/api/rpc/proto"
 	"github.com/tempcke/rpm/internal"
-	"github.com/tempcke/rpm/internal/config"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -15,22 +14,15 @@ import (
 var _ pb.RPMServer = (*Server)(nil)
 
 type Server struct {
-	Conf    config.Config
-	actions actions.Actions
-
 	pb.UnimplementedRPMServer
+	actions actions.Actions
 }
 
 func NewServer(actions actions.Actions) *Server {
 	server := Server{
-		Conf:    config.GetConfig(),
 		actions: actions,
 	}
 	return &server
-}
-func (s *Server) WithConfig(conf config.Config) *Server {
-	s.Conf = conf
-	return s
 }
 
 func (s *Server) StoreProperty(ctx context.Context, req *pb.StorePropertyReq) (*pb.StorePropertyRes, error) {

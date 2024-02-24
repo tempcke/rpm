@@ -64,7 +64,7 @@ func TestAccessViaAPIKeyAndSecret(t *testing.T) {
 				reqSecret = tc.rs
 			)
 
-			s := rest.NewServer(acts).WithConfig(authConf(t, key, secret)).Handler()
+			s := rest.NewServer(acts).WithCredentials(key, secret).Handler()
 
 			body := openapi.NewStorePropertyReq(p1)
 			res := handleReq(t, s, putReq(t, route, body, map[string]string{
@@ -97,7 +97,7 @@ func TestHealth(t *testing.T) {
 func TestPutProperty(t *testing.T) {
 	var (
 		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(actions.NewActionsWithRepo(repo)).WithConfig(noAuthConf(t)).Handler()
+		s       = rest.NewServer(actions.NewActionsWithRepo(repo)).Handler()
 		headers map[string]string
 	)
 
@@ -194,7 +194,7 @@ func TestAddProperty_badRequest(t *testing.T) {
 		headers map[string]string
 		route   = "/property"
 		repo    = repository.NewInMemoryRepo()
-		s       = rest.NewServer(actions.NewActionsWithRepo(repo)).WithConfig(noAuthConf(t)).Handler()
+		s       = rest.NewServer(actions.NewActionsWithRepo(repo)).Handler()
 	)
 	tests := map[string]struct {
 		body string
@@ -236,8 +236,7 @@ func TestListProperties(t *testing.T) {
 	t.Run("200 list two properties", func(t *testing.T) {
 		var (
 			repo = repository.NewInMemoryRepo()
-			s    = rest.NewServer(actions.NewActionsWithRepo(repo)).
-				WithConfig(noAuthConf(t)).Handler()
+			s    = rest.NewServer(actions.NewActionsWithRepo(repo)).Handler()
 		)
 
 		// create two properties in propRepo
@@ -274,8 +273,7 @@ func TestListProperties(t *testing.T) {
 	t.Run("find one of two properties by zip", func(t *testing.T) {
 		var (
 			repo = repository.NewInMemoryRepo()
-			s    = rest.NewServer(actions.NewActionsWithRepo(repo)).
-				WithConfig(noAuthConf(t)).Handler()
+			s    = rest.NewServer(actions.NewActionsWithRepo(repo)).Handler()
 		)
 
 		// create two properties in propRepo
@@ -302,8 +300,7 @@ func TestGetProperty(t *testing.T) {
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(actions.NewActionsWithRepo(repo)).
-				WithConfig(noAuthConf(t)).Handler()
+		s         = rest.NewServer(actions.NewActionsWithRepo(repo)).Handler()
 	)
 	t.Run("200 get property", func(t *testing.T) {
 		var (
@@ -342,8 +339,7 @@ func TestDeleteProperty(t *testing.T) {
 		routeBase = "/property/"
 		headers   map[string]string
 		repo      = repository.NewInMemoryRepo()
-		s         = rest.NewServer(actions.NewActionsWithRepo(repo)).
-				WithConfig(noAuthConf(t)).Handler()
+		s         = rest.NewServer(actions.NewActionsWithRepo(repo)).Handler()
 	)
 	t.Run("204 delete property", func(t *testing.T) {
 		var (
@@ -507,7 +503,7 @@ func fmtMsgAndArgs(v ...any) string {
 		return fmt.Sprintf(msg, args...)
 	}
 }
-func newServer(t testing.TB) *rest.Server {
+func newServer(_ testing.TB) *rest.Server {
 	var repo = repository.NewInMemoryRepo()
-	return rest.NewServer(actions.NewActionsWithRepo(repo)).WithConfig(noAuthConf(t))
+	return rest.NewServer(actions.NewActionsWithRepo(repo))
 }

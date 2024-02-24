@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/tempcke/rpm/api/rest"
-	"github.com/tempcke/rpm/internal/config"
+	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/test"
 	"github.com/tempcke/rpm/specifications"
 )
 
 var _ specifications.Driver = rest.Driver{}
-var conf = test.GetConfig()
+var conf = test.Config()
 
 // TestAcceptanceOpenAPI runs against the binary running in docker, so you can't debug
 // through to the server code. on local make sure you `make dockerRestartApp`
@@ -31,7 +31,7 @@ func TestAcceptanceOpenAPI_specifications(t *testing.T) {
 }
 func restDriver() rest.Driver {
 	return rest.Driver{
-		BaseURL: "http://localhost:" + conf.GetString(config.AppPort),
+		BaseURL: "http://localhost:" + conf.GetString(internal.EnvAppPort),
 		Client: &http.Client{
 			Timeout: 1 * time.Second,
 		},

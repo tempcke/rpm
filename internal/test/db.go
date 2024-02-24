@@ -11,8 +11,7 @@ import (
 
 func DB(t testing.TB) *sql.DB {
 	t.Helper()
-	// try local docker compose docker first
-	db, err := postgres.DB(postgres.MakeDSN(GetConfig()))
+	db, err := postgres.NewDB(Config())
 	require.NoError(t, err)
 	require.NoError(t, db.Ping())
 	return db

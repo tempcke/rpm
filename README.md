@@ -74,20 +74,14 @@ Usage: make <target>
   - Thanks [quii](https://quii.gitbook.io/learn-go-with-tests/testing-fundamentals/scaling-acceptance-tests#separation-of-concerns) and [Dave Farley](https://www.youtube.com/watch?v=JDD5EEJgpHU)
 ## Implemented Features both REST and gRPC
 - **Property**: 
-  - Store,
-  - Get,
-  - List
-    - filters
-      - search string
-  - Remove
-- **Tenant**:   Store, Get, List
+  - Store, Get, Remove
+  - List with search string filter
+- **Tenant**:
+  - Store, Get, List
 
 ## Roadmap
-- Property Search API
-- List Properties
-    - filter
-    - sort
-    - paginate
+- filter, sort, paginate
+- Prometheus
 - Lease property support
     - tenants
     - rent amount

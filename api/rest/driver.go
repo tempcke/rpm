@@ -143,10 +143,10 @@ func (d Driver) getTenantRes(r *http.Response) (*entity.Tenant, error) {
 }
 
 func (d Driver) headers() map[string]string {
-	conf := test.GetConfig()
+	c := test.Config()
 	headers := map[string]string{
-		HeaderAPIKey:    conf.GetString(internal.EnvAPIKey),
-		HeaderAPISecret: conf.GetString(internal.EnvAPISecret),
+		HeaderAPIKey:    c.GetString(internal.EnvAPIKey),
+		HeaderAPISecret: c.GetString(internal.EnvAPISecret),
 	}
 	return headers
 }

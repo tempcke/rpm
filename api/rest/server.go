@@ -11,7 +11,6 @@ import (
 	oapi "github.com/tempcke/rpm/api/rest/openapi"
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/internal"
-	"github.com/tempcke/rpm/internal/config"
 	"github.com/tempcke/rpm/internal/lib/log"
 )
 
@@ -22,12 +21,14 @@ const (
 
 var _ oapi.ServerInterface = (*Server)(nil)
 
-type Header struct{ k, v string }
-
-type Server struct {
-	Conf    config.Config
-	actions actions.Actions
-}
+type (
+	Server struct {
+		actions   actions.Actions
+		apiKey    string
+		apiSecret string
+	}
+	Header struct{ k, v string }
+)
 
 func (s *Server) LeaseProperty(w http.ResponseWriter, r *http.Request) {
 	// TODO implement me
@@ -175,14 +176,14 @@ func (s *Server) DeleteProperty(w http.ResponseWriter, r *http.Request, property
 
 func NewServer(acts actions.Actions) *Server {
 	server := Server{
-		Conf:    config.GetConfig(),
 		actions: acts,
 	}
 	return &server
 }
-func (s *Server) WithConfig(conf config.Config) *Server {
+
+func (s *Server) WithCredentials(key, secret string) *Server {
 	s2 := *s
-	s2.Conf = conf
+	s2.apiKey, s2.apiSecret = key, secret
 	return &s2
 }
 func (s *Server) Handler() http.Handler {
@@ -203,8 +204,8 @@ func (s *Server) Handler() http.Handler {
 func (s *Server) AuthMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var (
-			key       = s.Conf.GetString(internal.EnvAPIKey)
-			secret    = s.Conf.GetString(internal.EnvAPISecret)
+			key       = s.apiKey
+			secret    = s.apiSecret
 			reqKey    = r.Header.Get(HeaderAPIKey)
 			reqSecret = r.Header.Get(HeaderAPISecret)
 		)

@@ -204,6 +204,7 @@ func newPropertyFixture(r usecase.PropertyRepo) entity.Property {
 	return r.NewProperty("1234 N Main st.", "Dallas", "TX", "75401")
 }
 func pgRepo(t testing.TB) repository.Postgres {
+	t.Helper()
 	return repository.NewPostgresRepo(test.DB(t))
 }
 func removeChars(s string, chars ...string) string {

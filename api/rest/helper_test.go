@@ -8,26 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tempcke/rpm/internal"
-	"github.com/tempcke/rpm/internal/config"
 )
-
-func noAuthConf(t testing.TB) config.Config {
-	t.Helper()
-	c, err := config.NewConfBuilder().AutomaticEnv().Build()
-	require.NoError(t, err)
-	c.Set(internal.EnvAPIKey, "")
-	c.Set(internal.EnvAPISecret, "")
-	return c
-}
-func authConf(t testing.TB, key, secret string) config.Config {
-	t.Helper()
-	c, err := config.NewConfBuilder().AutomaticEnv().Build()
-	require.NoError(t, err)
-	c.Set(internal.EnvAPIKey, key)
-	c.Set(internal.EnvAPISecret, secret)
-	return c
-}
 
 func getReq(t testing.TB, route string, headers map[string]string) *http.Request {
 	return httpReq(t, http.MethodGet, route, nil, headers)
