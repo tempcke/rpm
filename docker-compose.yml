@@ -5,6 +5,11 @@ services:
     image: prom/prometheus:v2.49.1
     ports:
       - ${PROMETHEUS_PORT}:9090
+    healthcheck:
+      test: ["CMD", "wget", "http://localhost:9090"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   postgres:
     image: postgres:13.2-alpine
@@ -46,5 +51,7 @@ services:
       SERVICE_CERT_FILE: /app/service.pem
       SERVICE_KEY_FILE: /app/service.key
     depends_on:
+      prometheus:
+        condition: service_healthy
       postgres:
         condition: service_healthy

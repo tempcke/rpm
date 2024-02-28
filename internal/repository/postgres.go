@@ -9,7 +9,6 @@ import (
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/filters"
-	"github.com/tempcke/rpm/internal/lib/log"
 	"github.com/tempcke/rpm/usecase"
 )
 
@@ -21,10 +20,6 @@ type Postgres struct {
 
 // NewPostgresRepo constructs a Postgres repository
 func NewPostgresRepo(db *sql.DB) Postgres {
-	if err := db.Ping(); err != nil {
-		log.Fatal("Could not connect to db: " + err.Error())
-	}
-
 	return Postgres{
 		db:    db,
 		clock: clockwork.NewRealClock(),

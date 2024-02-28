@@ -2,27 +2,34 @@ package mig
 
 import (
 	"database/sql"
+	"fmt"
+	"log/slog"
 	"strings"
 
 	migrate "github.com/rubenv/sql-migrate"
-	"github.com/sirupsen/logrus"
 )
 
 const DefaultTrackingTable = "mig_applied_migrations"
 const DefaultDialect = "postgres"
 
-type Runner struct {
-	db      *sql.DB
-	dialect string
-	logger  logrus.FieldLogger
-	flows   []*Flow
-	migSet  migrate.MigrationSet
-}
+type (
+	Runner struct {
+		db      *sql.DB
+		dialect string
+		logger  logger // slog.Logger
+		flows   []*Flow
+		migSet  migrate.MigrationSet
+	}
+	logger = interface {
+		Info(msg string, args ...any)
+		Warn(msg string, args ...any)
+		Error(msg string, args ...any)
+	}
+)
 
 func NewRunner(db *sql.DB) Runner {
 	r := Runner{db: db}
 	return r.
-		WithLogger(logrus.StandardLogger()).
 		WithTrackingTable(DefaultTrackingTable).
 		WithDialect(DefaultDialect)
 }
@@ -33,8 +40,8 @@ func (r Runner) WithFlows(flows ...*Flow) Runner {
 	r.flows = append(r.flows, flows...)
 	return r
 }
-func (r Runner) WithLogger(logger logrus.FieldLogger) Runner {
-	r.logger = logger
+func (r Runner) WithLogger(l logger) Runner {
+	r.logger = l
 	return r
 }
 
@@ -78,7 +85,7 @@ func (r *Runner) Up() error {
 	if err != nil {
 		return err
 	}
-	r.log().Infof("Applied %d migrations in %s schema!", n, r.migSet.SchemaName)
+	r.log().Info(fmt.Sprintf("Applied %d migrations in %s schema!", n, r.migSet.SchemaName))
 	return nil
 }
 
@@ -115,9 +122,9 @@ func (r *Runner) migFlows() []Flow {
 	return result
 }
 
-func (r Runner) log() logrus.FieldLogger {
+func (r Runner) log() logger {
 	if r.logger == nil {
-		r.logger = logrus.StandardLogger()
+		r.logger = slog.Default().With("mig", "mig.Runner")
 	}
-	return r.logger.WithField("mig", "mig.Runner")
+	return r.logger
 }

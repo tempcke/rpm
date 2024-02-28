@@ -1,18 +1,17 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"sync"
 
 	_ "github.com/lib/pq" // db driver
-	"github.com/sirupsen/logrus"
 	"github.com/tempcke/rpm/actions"
 	"github.com/tempcke/rpm/api/rest"
 	"github.com/tempcke/rpm/api/rpc"
@@ -27,23 +26,20 @@ import (
 )
 
 func main() {
-	var (
-		ctx = context.Background()
-	)
-	if err := run(ctx, os.Getenv, os.Args[1:]...); err != nil {
-		log.Fatal(err)
+	if err := run(os.Getenv, os.Args[1:]...); err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
 	}
 }
 
 func run(
-	ctx context.Context,
-	getenv func(string) string,
+	envFunc func(string) string,
 	args ...string,
 ) error {
 	var (
 		errChan = make(chan error)
-		logger  = log.Entry()
-		conf    = buildConfig(getenv, args...)
+		conf    = buildConfig(envFunc, args...)
+		logger  = initLogger(conf)
 	)
 
 	db, err := postgres.NewDB(conf)
@@ -60,7 +56,14 @@ func run(
 	return <-errChan
 }
 
-func openapiServer(conf Config, db *sql.DB, log logrus.FieldLogger) error {
+func initLogger(conf configs.Config) *slog.Logger {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).With(
+		"appEnv", conf.GetString(internal.EnvAppEnv))
+	slog.SetDefault(logger)
+	return slog.Default()
+}
+
+func openapiServer(conf Config, db *sql.DB, log log.SLogger) error {
 	var (
 		r    = repo(db)
 		acts = actions.NewActions().
@@ -76,10 +79,9 @@ func openapiServer(conf Config, db *sql.DB, log logrus.FieldLogger) error {
 	server := rest.NewServer(acts).WithCredentials(apiKey, apiSecret)
 
 	log.Info("Listening on " + port)
-	fmt.Println("Listening on " + port)
 	return http.ListenAndServe(port, server.Handler())
 }
-func grpcServer(conf Config, db *sql.DB, log logrus.FieldLogger) error {
+func grpcServer(conf Config, db *sql.DB, log *slog.Logger) error {
 	var (
 		port = ":" + conf.GetString(internal.EnvGrpcPort)
 	)
@@ -90,7 +92,11 @@ func grpcServer(conf Config, db *sql.DB, log logrus.FieldLogger) error {
 	if err != nil {
 		return err
 	}
-	s := grpc.NewServer(grpcOptions(conf, log)...)
+	options, err := grpcOptions(conf)
+	if err != nil {
+		return err
+	}
+	s := grpc.NewServer(options...)
 	r := repo(db)
 	rpcServer := rpc.NewServer(actions.NewActions().
 		WithPropertyRepo(r).WithTenantRepo(r))
@@ -100,19 +106,19 @@ func grpcServer(conf Config, db *sql.DB, log logrus.FieldLogger) error {
 	fmt.Println("Listening on " + port)
 	return s.Serve(lis)
 }
-func grpcOptions(conf Config, log logrus.FieldLogger) []grpc.ServerOption {
+func grpcOptions(conf Config) ([]grpc.ServerOption, error) {
 	var (
 		certFile = conf.GetString(internal.EnvServiceCertFile)
 		keyFile  = conf.GetString(internal.EnvServiceKeyFile)
 	)
 	if certFile == "" || keyFile == "" {
-		log.WithField("func", "main.grpcCreds").Fatal("Failed to setup TLS: cert and key file not configured")
+		return nil, errors.New("grpcOptions: failed to setup TLS: cert and key file not configured")
 	}
 	creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
 	if err != nil {
-		log.WithField("func", "main.grpcCreds").Fatalf("Failed to setup TLS: %v", err)
+		return nil, fmt.Errorf("grpcOptions: credentials.NewServerTLSFromFile failed: %w", err)
 	}
-	return []grpc.ServerOption{grpc.Creds(creds)}
+	return []grpc.ServerOption{grpc.Creds(creds)}, nil
 }
 
 var (
@@ -131,10 +137,10 @@ type Config interface {
 	GetString(string) string
 }
 
-func buildConfig(envFn func(string) string, args ...string) configs.Config {
+func buildConfig(envFunc func(string) string, args ...string) configs.Config {
 	return configs.New(
 		configs.WithFlagSet(getFlagSet()),
-		configs.WithEnvFunc(envFn),
+		configs.WithEnvFunc(envFunc),
 		configs.WithArgs(args), // os.Args[1:] from main()
 	)
 }

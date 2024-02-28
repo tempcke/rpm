@@ -13,28 +13,25 @@ check: test lint	## lint + test, pre-commit hook
 
 lint:				## fmt, vet, and staticcheck
 	test -z $(shell go fmt ./...)
-	go vet ./...
+	go vet -mod=vendor ./...
 	staticcheck -tags=withDocker ./... | grep -v .gen.go && exit 1 || exit 0
 
 test: init			## execute tests
 	godotenv time -p go test -failfast -race -count=1 ./... -cover | grep -v '\[no test'
 testAll: dockerUp	## run all tests including those that need docker/postgres
 	godotenv time -p go test -failfast -count=1 ./... -tags=withDocker -cover | grep -v '\[no test'
-testCI:				## exact tests the way buildkite does, use for local debug of buildkite failure
-	docker-compose -f docker-compose-ci.yml -p $(project)-ci run --rm appci /bin/sh -e -c 'bash pipeline/test.sh' || true
-	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
 testAcceptance: dockerRestartApp  ## black box testing
 	godotenv time -p go test -failfast -count=1 ./cmd/... -v -run=Acceptance -tags=withDocker | grep -v '\[no test'
 
 dockerUp: init		## docker-compose up
 	@if [ ! "$(shell docker-compose ps --services --filter "status=running" | grep postgres)" = "postgres" ]; then \
-		docker-compose up -d; \
+		docker-compose up -d --build app; \
 	fi
 dockerDown:	init	## docker-compose down
 	docker-compose down
 dockerRestart: dockerDown dockerUp	## dockerDown && dockerUp
 
-dockerRestartApp: dockerUp	## rebuild app and replace running container
+dockerRestartApp:	## rebuild app and replace running container
 	docker-compose up -d --no-deps --build app
 
 dockerFollowLogs: dockerUp  ## live stream logs from docker-compose
@@ -46,7 +43,6 @@ apiCheck: dockerRestart 	## generate api docs in apicheck.md
 	docker-compose start app
 
 clean: dockerDown ## dockerDown && docker-compose down for CI
-	docker-compose -f docker-compose-ci.yml -p $(project)-ci down
 	rm bin/rpm
 
 init: .env .git/hooks/pre-commit cert

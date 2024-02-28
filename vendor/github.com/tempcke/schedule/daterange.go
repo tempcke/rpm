@@ -1,13 +1,7 @@
 package schedule
 
 import (
-	"errors"
 	"math"
-)
-
-var (
-	ErrFromRequired = errors.New("from is required")
-	ErrPastUntil    = errors.New("until can not be before from")
 )
 
 // DateRange represents a set of days
@@ -16,8 +10,8 @@ var (
 // from Jan1 until Jan2 is two days
 // when Until is nil it means forever
 type DateRange struct {
-	From  Date  `json:"validFrom"`
-	Until *Date `json:"validUntil,omitempty"`
+	From  Date  `json:"from"`
+	Until *Date `json:"until,omitempty"`
 }
 
 func NewDateRange() DateRange {
@@ -106,6 +100,9 @@ func (dr DateRange) Exceeds(parentDR DateRange) bool {
 	return dr.Until == nil || dr.Until.After(*parentDR.Until)
 }
 
+// Merge keeps the intersection of both date ranges
+// so given dr is jan01-jan31 and dr2 is jan15-feb15
+// then result is jan15-jan31
 func (dr DateRange) Merge(dr2 DateRange) DateRange {
 	if !dr.Overlaps(dr2) {
 		return ZeroDateRange()

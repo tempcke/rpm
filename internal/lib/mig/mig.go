@@ -1,9 +1,9 @@
 package mig
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 // limits
@@ -11,8 +11,6 @@ const (
 	FlowNumLimit = 4095 // FFF
 	StepNumLimit = 255  // FF
 )
-
-var logger logrus.FieldLogger
 
 // MakeID creates a migration ID from a given flow and step num
 // flowNum and stepNum are converted to hex and appended to the prefix
@@ -32,26 +30,16 @@ func MakeID(prefix string, flowNum, stepNum int) string {
 // if they exceed the limits then the id may be to long and cause mig.MustID to panic
 func checkLimits(flowNum, stepNum int) {
 	if flowNum > FlowNumLimit || stepNum > StepNumLimit {
-		// we use Fatal because if your migrations don't run your app is broken
-		// if this ever happens it should result in test failures
-		log().WithField("func", "mig.MakeID").
-			WithField("flowNum", flowNum).
-			WithField("stepNum", stepNum).
-			WithField("FlowNumLimit", FlowNumLimit).
-			WithField("StepNumLimit", StepNumLimit).
-			Fatal("flow or step num exceeds limit")
+		ctx := context.Background()
+		msg := "flow or step num exceeds limit"
+		slog.Default().LogAttrs(ctx, slog.LevelError, msg,
+			slog.String("func", "mig.MakeID"),
+			slog.Int("flowNum", flowNum),
+			slog.Int("stepNum", stepNum),
+			slog.Int("FlowNumLimit", FlowNumLimit),
+			slog.Int("StepNumLimit", StepNumLimit),
+		)
+		// this will never panic, because tests ensure it is set correctly
+		panic(msg)
 	}
-}
-
-func log() logrus.FieldLogger {
-	if logger == nil {
-		return logrus.StandardLogger()
-	}
-	return logger
-}
-
-// UseLogger allows you to customize the logger that will be used should errors happen
-// else it will default to logrus.StandardLogger()
-func UseLogger(l logrus.FieldLogger) {
-	logger = l
 }

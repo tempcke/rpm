@@ -7,7 +7,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/tempcke/rpm/internal/configs"
-	"github.com/tempcke/rpm/internal/lib/log"
 )
 
 var (
@@ -20,9 +19,7 @@ func Config() configs.Config {
 		if file := findConfigFile(); file != "" {
 			m, err := godotenv.Read(findConfigFile())
 			if err != nil {
-				log.WithError(err).
-					WithField("func", "test.Config").
-					Fatal("could not read .env file")
+				panic(err) // this function is only called from tests, so it is okay to panic
 			}
 			_conf = configs.New(configs.WithEnvFromMap(m))
 		}

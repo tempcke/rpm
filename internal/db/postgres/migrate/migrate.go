@@ -2,8 +2,8 @@ package migrate
 
 import (
 	"database/sql"
+	"log/slog"
 
-	"github.com/sirupsen/logrus"
 	"github.com/tempcke/rpm/internal/db/postgres/migrate/flows"
 	"github.com/tempcke/rpm/internal/lib/mig"
 )
@@ -13,8 +13,8 @@ var allFlows = []*mig.Flow{
 	&flows.Flow002Tenants,
 }
 
-func Up(db *sql.DB, log logrus.FieldLogger) error {
-	log = log.WithField("operation", "migrate.Up")
+func Up(db *sql.DB, log *slog.Logger) error {
+	log = log.With("operation", "migrate.Up")
 
 	if len(allFlows) == 0 {
 		log.Warn("no migrations, was Up called more than once?")

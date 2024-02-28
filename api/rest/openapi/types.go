@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/deepmap/oapi-codegen/pkg/types"
+	"github.com/oapi-codegen/runtime/types"
 	"github.com/tempcke/rpm/entity"
 	"github.com/tempcke/rpm/usecase"
 	"github.com/tempcke/schedule"

@@ -226,7 +226,7 @@ func (s *Server) okHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 func (s *Server) logError(err error) {
-	log.Entry().Error(err)
+	log.Entry().Error(err.Error())
 }
 
 func errorResponse(w http.ResponseWriter, code int, msg string) {

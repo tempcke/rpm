@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
-	"github.com/sirupsen/logrus"
 	"github.com/tempcke/path"
 	"github.com/tempcke/rpm/api/rest/openapi"
 	"github.com/tempcke/rpm/entity"
@@ -23,7 +23,7 @@ type (
 	Driver struct {
 		BaseURL string
 		Client  httpClient
-		Logger  logrus.FieldLogger
+		Logger  *slog.Logger
 	}
 	httpClient interface { // *http.Client
 		Do(req *http.Request) (*http.Response, error)
@@ -174,10 +174,7 @@ func (d Driver) decodeResponse(res *http.Response, v interface{}) error {
 
 	if err := json.NewDecoder(tr).Decode(&v); err != nil {
 		bodyString := buf.String()
-		d.logErr(err, "jsonDecode response failed", logrus.Fields{
-			"func":    "Driver.decodeResponse",
-			"rawBody": bodyString,
-		})
+		d.log().Error("rest.Driver: jsonDecode response failed: "+err.Error(), "rawBody", bodyString)
 		if len(bodyString) == 0 {
 			return errors.New("could not decode empty response body")
 		}
@@ -186,15 +183,12 @@ func (d Driver) decodeResponse(res *http.Response, v interface{}) error {
 
 	return nil
 }
-func (d Driver) logErr(err error, msg string, fields logrus.Fields) {
-	d.log().WithFields(fields).WithError(err).Error(msg)
-}
-func (d Driver) log() logrus.FieldLogger {
+func (d Driver) log() *slog.Logger {
 	var logger = d.Logger
 	if logger == nil {
-		logger = logrus.StandardLogger()
+		logger = slog.Default()
 	}
-	return logger.WithField("object", "Driver")
+	return logger.With("object", "Driver")
 }
 func (d Driver) path(route string) path.Path {
 	p := path.New(route).WithBaseURL(d.BaseURL)

@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/tempcke/rpm/internal"
 	"github.com/tempcke/rpm/internal/db/postgres/migrate"
-	"github.com/tempcke/rpm/internal/lib/log"
 )
 
 var _db *sql.DB
@@ -20,19 +20,20 @@ var (
 
 func DB(dsn string) (*sql.DB, error) {
 	if _db == nil || _db.Ping() != nil {
-		logger := log.WithField("func", "postgres.DB")
+		logger := slog.Default().With("func", "postgres.DB")
 
 		db, err := sql.Open(driverName, dsn)
 		if err != nil {
-			logger.WithError(err).Error("sql.Open failed")
+			logger.With("error", err).Error("sql.Open failed")
 			return nil, fmt.Errorf("%w: %s", ErrConnectionFailed, err)
 		}
 		if err := db.Ping(); err != nil {
+			logger.With("error", err).Error("db.Ping failed")
 			return nil, fmt.Errorf("%w: %s", ErrConnectionFailed, err)
 		}
 
 		if err := migrate.Up(db, logger); err != nil {
-			logger.WithError(err).Error("migrate.Up failed")
+			logger.With("error", err).Error("migrate.Up failed")
 			return nil, fmt.Errorf("%w: %s", ErrMigrationsFailed, err)
 		}
 
